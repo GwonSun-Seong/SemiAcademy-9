@@ -96,8 +96,7 @@
   <!-- React Mount Point -->
   <div id="root" class="relative z-10 w-full h-full"></div>
 
-  <!-- External API Key Modal Component -->
-  <script src="./api-key-modal.js"></script>
+  <!-- Inline API Key Modal is defined within the main module block -->
 
   <!-- React Script block -->
   <script type="text/babel" data-type="module">
@@ -1194,10 +1193,101 @@
       );
     };
 
-    // --- 4.5 API KEY SETTINGS MODAL COMPONENT (DYNAMIC WRAPPER) ---
-    const ApiKeyModal = (props) => {
-      if (!window.ApiKeyModal) return null;
-      return <window.ApiKeyModal {...props} />;
+    // --- 4.5 API KEY SETTINGS MODAL COMPONENT ---
+    const ApiKeyModal = ({ isOpen, onClose, onKeySave }) => {
+      if (!isOpen) return null;
+
+      const [inputKey, setInputKey] = useState(() => localStorage.getItem('user_gemini_api_key') || '');
+      const [showKey, setShowKey] = useState(false);
+
+      useEffect(() => {
+        if (isOpen) {
+          setInputKey(localStorage.getItem('user_gemini_api_key') || '');
+        }
+      }, [isOpen]);
+
+      const handleSave = () => {
+        const trimmed = inputKey.trim();
+        if (trimmed) {
+          localStorage.setItem('user_gemini_api_key', trimmed);
+          onKeySave(trimmed);
+          alert("개인 API 키가 안전하게 등록되었습니다.");
+        } else {
+          localStorage.removeItem('user_gemini_api_key');
+          onKeySave('');
+          alert("개인 API 키가 삭제되었습니다. 공용 API 키로 복구됩니다.");
+        }
+        onClose();
+      };
+
+      const handleClear = () => {
+        if (confirm("등록된 API 키를 삭제하시겠습니까?")) {
+          localStorage.removeItem('user_gemini_api_key');
+          setInputKey('');
+          onKeySave('');
+          alert("삭제 완료! 다시 공용 API 키를 순회하여 사용합니다.");
+          onClose();
+        }
+      };
+
+      return (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-sm p-5 shadow-2xl relative fade-in">
+            <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-200">✕</button>
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-slate-100">
+                <i className="fa-solid fa-key text-cyan-400"></i>
+                <h3 className="text-sm font-bold">Google Gemini API 설정</h3>
+              </div>
+              <p className="text-[10px] text-slate-400 leading-relaxed bg-slate-950/60 p-2.5 border border-slate-850 rounded-xl">
+                <strong>💡 개인 API 키 사용 권장</strong><br />
+                여러 사람이 공용 키를 사용할 경우 일일 요청 횟수 제한(Quota Limit)으로 서비스가 일시 중지될 수 있습니다. 개인 키를 등록하면 중단 없이 무제한 사용 가능하며, 키는 <strong>본인의 브라우저 로컬 저장소(LocalStorage)에만 안전하게 보관</strong>되고 절대 외부 서버로 수집되지 않습니다.
+              </p>
+              <div className="space-y-1.5">
+                <label className="block text-[10px] text-slate-400 font-bold">Gemini API Key 입력</label>
+                <div className="relative">
+                  <input
+                    type={showKey ? "text" : "password"}
+                    placeholder="AIzaSy..."
+                    value={inputKey}
+                    onChange={e => setInputKey(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-3 pr-10 py-2.5 text-xs text-slate-100 outline-none focus:border-cyan-500 font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowKey(!showKey)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs"
+                  >
+                    <i className={`fa-solid ${showKey ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                  </button>
+                </div>
+              </div>
+              <div className="text-[10px] text-slate-500 leading-normal">
+                키가 없으신가요? <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-cyan-400 font-black hover:underline">Google AI Studio에서 무료 API 키 발급받기 ↗</a> (구글 계정만 있으면 3초 만에 무료 생성 가능)
+              </div>
+              <div className="flex gap-2 pt-2 border-t border-slate-850">
+                {localStorage.getItem('user_gemini_api_key') && (
+                  <button
+                    type="button"
+                    onClick={handleClear}
+                    className="flex-1 py-2 rounded-lg bg-rose-950/30 hover:bg-rose-900/40 text-rose-400 text-xs font-bold border border-rose-950/30 transition-colors"
+                  >
+                    삭제
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  className="flex-[2] py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-extrabold rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5 shadow-lg shadow-cyan-500/15"
+                >
+                  <i className="fa-solid fa-circle-check"></i>
+                  {inputKey.trim() ? 'API 키 등록' : '취소'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
     };
 
     // --- 5. ROADMAP TAB ---
@@ -2125,22 +2215,44 @@ JSON 배열 구조 예시:
       const [isLoading, setIsLoading] = useState(false);
       const [isWriting, setIsWriting] = useState(false);
 
-      // Cache nickname loader
+      // Cache nickname loader for posts
       const [nickname, setNickname] = useState(() => localStorage.getItem('cached_nickname') || '');
       const [password, setPassword] = useState('');
       const [title, setTitle] = useState('');
       const [content, setContent] = useState('');
 
+      // State for keeping track of expanded comments & input fields per post/comment
+      const [expandedPosts, setExpandedPosts] = useState({}); // { [postId]: boolean }
+      const [commentInputs, setCommentInputs] = useState({}); // { [postId]: { nickname, password, content } }
+      const [replyingTo, setReplyingTo] = useState(null);     // commentId of parent
+      const [replyInputs, setReplyInputs] = useState({});     // { [commentId]: { nickname, password, content } }
+
       const fetchPosts = async () => {
         setIsLoading(true);
         try {
-          const { data, error } = await supabase
+          // 1. Fetch Posts
+          const { data: postsData, error: postsError } = await supabase
             .from('posts')
             .select('*')
             .order('created_at', { ascending: false });
 
-          if (error) throw error;
-          setPosts(data || []);
+          if (postsError) throw postsError;
+
+          // 2. Fetch Comments
+          const { data: commentsData, error: commentsError } = await supabase
+            .from('comments')
+            .select('*')
+            .order('created_at', { ascending: true });
+
+          if (commentsError) throw commentsError;
+
+          // 3. Map comments to their respective posts
+          const mapped = (postsData || []).map(post => ({
+            ...post,
+            comments: (commentsData || []).filter(c => c.post_id === post.id)
+          }));
+
+          setPosts(mapped);
         } catch(e) {
           console.error("Supabase 로드 오류:", e.message);
         } finally {
@@ -2161,11 +2273,11 @@ JSON 배열 구조 예시:
         try {
           const { error } = await supabase
             .from('posts')
-            .insert([{ nickname: nickname.trim(), password: password.trim(), title, content }]);
+            .insert([{ nickname: nickname.trim(), password: password.trim(), title, content, likes: 0 }]);
 
           if (error) throw error;
 
-          // Cache nickname to localstorage
+          // Cache nickname
           localStorage.setItem('cached_nickname', nickname.trim());
 
           setPassword('');
@@ -2202,6 +2314,157 @@ JSON 배열 구조 예시:
         }
       };
 
+      // Like / Empathy Post
+      const handleLikePost = async (postId, currentLikes) => {
+        const likedKey = `liked_post_${postId}`;
+        if (localStorage.getItem(likedKey)) {
+          alert("이미 공감한 게시글입니다.");
+          return;
+        }
+
+        try {
+          const { error } = await supabase
+            .from('posts')
+            .update({ likes: (currentLikes || 0) + 1 })
+            .eq('id', postId);
+
+          if (error) throw error;
+          localStorage.setItem(likedKey, 'true');
+          fetchPosts();
+        } catch(e) {
+          alert(`공감 반영 실패: ${e.message}`);
+        }
+      };
+
+      // Toggle comment accordion section
+      const toggleComments = (postId) => {
+        setExpandedPosts(prev => ({
+          ...prev,
+          [postId]: !prev[postId]
+        }));
+      };
+
+      // Handle raw input change for comments
+      const handleCommentInputChange = (postId, field, value) => {
+        setCommentInputs(prev => ({
+          ...prev,
+          [postId]: {
+            ...(prev[postId] || { nickname: localStorage.getItem('cached_nickname') || '', password: '', content: '' }),
+            [field]: value
+          }
+        }));
+      };
+
+      // Add a regular top-level comment
+      const handleAddComment = async (e, postId) => {
+        e.preventDefault();
+        const inputs = commentInputs[postId] || {};
+        const cNick = (inputs.nickname || localStorage.getItem('cached_nickname') || '').trim();
+        const cPass = (inputs.password || '').trim();
+        const cContent = (inputs.content || '').trim();
+
+        if (!cNick || !cPass || !cContent) {
+          return alert("댓글 작성자, 비밀번호, 본문 내용을 모두 채워주세요.");
+        }
+
+        try {
+          const { error } = await supabase
+            .from('comments')
+            .insert([{
+              post_id: postId,
+              parent_id: null,
+              nickname: cNick,
+              password: cPass,
+              content: cContent
+            }]);
+
+          if (error) throw error;
+
+          // Clear content
+          setCommentInputs(prev => ({
+            ...prev,
+            [postId]: { ...prev[postId], content: '', password: '' }
+          }));
+          localStorage.setItem('cached_nickname', cNick);
+          fetchPosts();
+        } catch(e) {
+          alert(`댓글 작성 실패: ${e.message}`);
+        }
+      };
+
+      // Handle raw input change for replies (nested comments)
+      const handleReplyInputChange = (commentId, field, value) => {
+        setReplyInputs(prev => ({
+          ...prev,
+          [commentId]: {
+            ...(prev[commentId] || { nickname: localStorage.getItem('cached_nickname') || '', password: '', content: '' }),
+            [field]: value
+          }
+        }));
+      };
+
+      // Add a nested reply (deep comment)
+      const handleAddReply = async (e, postId, parentId) => {
+        e.preventDefault();
+        const inputs = replyInputs[parentId] || {};
+        const rNick = (inputs.nickname || localStorage.getItem('cached_nickname') || '').trim();
+        const rPass = (inputs.password || '').trim();
+        const rContent = (inputs.content || '').trim();
+
+        if (!rNick || !rPass || !rContent) {
+          return alert("답글 작성자, 비밀번호, 본문 내용을 모두 채워주세요.");
+        }
+
+        try {
+          const { error } = await supabase
+            .from('comments')
+            .insert([{
+              post_id: postId,
+              parent_id: parentId,
+              nickname: rNick,
+              password: rPass,
+              content: rContent
+            }]);
+
+          if (error) throw error;
+
+          // Clear
+          setReplyInputs(prev => ({
+            ...prev,
+            [parentId]: { ...prev[parentId], content: '', password: '' }
+          }));
+          setReplyingTo(null);
+          localStorage.setItem('cached_nickname', rNick);
+          fetchPosts();
+        } catch(e) {
+          alert(`답글 작성 실패: ${e.message}`);
+        }
+      };
+
+      // Delete a comment / reply
+      const handleDeleteComment = async (commentId, commentPassword) => {
+        const inputPassword = prompt("댓글 삭제 비밀번호를 입력하세요:");
+        if (inputPassword === null) return;
+
+        if (inputPassword.trim() !== commentPassword.trim()) {
+          return alert("비밀번호가 일치하지 않습니다.");
+        }
+
+        try {
+          const { error } = await supabase
+            .from('comments')
+            .delete()
+            .eq('id', commentId)
+            .eq('password', inputPassword.trim());
+
+          if (error) throw error;
+          fetchPosts();
+          alert("댓글이 성공적으로 삭제되었습니다.");
+        } catch(e) {
+          alert(`댓글 삭제 오류: ${e.message}`);
+        }
+      };
+
       return (
         <div className="flex flex-col h-full fade-in">
           {/* Header */}
@@ -2232,7 +2495,7 @@ JSON 배열 구조 예시:
                 </div>
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div>
-                    <label className="block text-[10px] text-slate-500 font-bold mb-1">작성자 닉네임</label>
+                    <label className="block text-[10px] text-slate-55-rgb font-bold mb-1">작성자 닉네임</label>
                     <input 
                       type="text" 
                       placeholder="닉네임"
@@ -2242,7 +2505,7 @@ JSON 배열 구조 예시:
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] text-slate-500 font-bold mb-1">삭제용 비밀번호</label>
+                    <label className="block text-[10px] text-slate-55-rgb font-bold mb-1">삭제용 비밀번호</label>
                     <input 
                       type="password" 
                       placeholder="비밀번호"
@@ -2254,7 +2517,7 @@ JSON 배열 구조 예시:
                 </div>
 
                 <div className="text-xs">
-                  <label className="block text-[10px] text-slate-500 font-bold mb-1">글 제목</label>
+                  <label className="block text-[10px] text-slate-55-rgb font-bold mb-1">글 제목</label>
                   <input 
                     type="text" 
                     placeholder="제목을 입력하세요"
@@ -2265,7 +2528,7 @@ JSON 배열 구조 예시:
                 </div>
 
                 <div className="text-xs">
-                  <label className="block text-[10px] text-slate-500 font-bold mb-1">본문 내용</label>
+                  <label className="block text-[10px] text-slate-55-rgb font-bold mb-1">본문 내용</label>
                   <textarea 
                     rows="5"
                     placeholder="내용을 작성하세요..."
@@ -2283,7 +2546,7 @@ JSON 배열 구조 예시:
                 </button>
               </form>
             ) : (
-              <div className="space-y-3 pb-4">
+              <div className="space-y-4 pb-6">
                 {isLoading ? (
                   <div className="h-44 flex flex-col items-center justify-center text-slate-500 text-xs gap-2">
                     <i className="fa-solid fa-spinner fa-spin text-lg text-emerald-400"></i>
@@ -2295,26 +2558,226 @@ JSON 배열 구조 예시:
                     <span>자유게시판에 등록된 글이 없습니다.</span>
                   </div>
                 ) : (
-                  posts.map(post => (
-                    <div key={post.id} className="bg-slate-900/30 border border-slate-800/60 rounded-2xl p-4 space-y-2 relative group hover:border-slate-700 transition-colors">
-                      <button
-                        onClick={() => handleDeletePost(post.id, post.password)}
-                        className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 text-slate-500 hover:text-rose-400 transition-opacity text-xs"
-                        title="게시글 삭제"
-                      >
-                        <i className="fa-solid fa-trash-can"></i>
-                      </button>
+                  posts.map(post => {
+                    const isLiked = localStorage.getItem(`liked_post_${post.id}`);
+                    const isExpanded = !!expandedPosts[post.id];
+                    const cInputs = commentInputs[post.id] || { nickname: localStorage.getItem('cached_nickname') || '', password: '', content: '' };
+                    
+                    // Filter replies and root comments
+                    const rootComments = post.comments.filter(c => !c.parent_id);
 
-                      <h3 className="text-xs font-bold text-slate-200 pr-8">{post.title}</h3>
-                      <p className="text-[11px] text-slate-400 leading-relaxed white-space-pre-wrap">{post.content}</p>
-                      
-                      <div className="flex items-center gap-2 text-[9px] text-slate-500 font-semibold pt-1 border-t border-slate-900">
-                        <span className="text-slate-400"><i className="fa-solid fa-user-graduate mr-1"></i>{post.nickname}</span>
-                        <span>•</span>
-                        <span>{new Date(post.created_at).toLocaleString('ko-KR', { hour12: false })}</span>
+                    return (
+                      <div key={post.id} className="bg-slate-900/30 border border-slate-800/60 rounded-2xl p-4 space-y-3 relative group hover:border-slate-700 transition-colors">
+                        {/* Delete post button */}
+                        <button
+                          onClick={() => handleDeletePost(post.id, post.password)}
+                          className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 text-slate-500 hover:text-rose-400 transition-opacity text-xs"
+                          title="게시글 삭제"
+                        >
+                          <i className="fa-solid fa-trash-can"></i>
+                        </button>
+
+                        <h3 className="text-xs font-bold text-slate-200 pr-8">{post.title}</h3>
+                        <p className="text-[11px] text-slate-400 leading-relaxed white-space-pre-wrap">{post.content}</p>
+                        
+                        <div className="flex justify-between items-center pt-2 border-t border-slate-900/80">
+                          {/* Left: Author Info */}
+                          <div className="flex items-center gap-2 text-[9px] text-slate-500 font-semibold">
+                            <span className="text-slate-400"><i className="fa-solid fa-user-graduate mr-1"></i>{post.nickname}</span>
+                            <span>•</span>
+                            <span>{new Date(post.created_at).toLocaleString('ko-KR', { hour12: false })}</span>
+                          </div>
+
+                          {/* Right: Likes & Comments Action Buttons */}
+                          <div className="flex items-center gap-3">
+                            {/* Like Button */}
+                            <button
+                              onClick={() => handleLikePost(post.id, post.likes)}
+                              className={`flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all ${
+                                isLiked 
+                                  ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' 
+                                  : 'bg-slate-950/40 border-slate-850 text-slate-400 hover:text-rose-400 hover:border-rose-500/20'
+                              }`}
+                            >
+                              <i className={`fa-solid fa-heart ${isLiked ? 'text-rose-400' : ''}`}></i>
+                              <span>{post.likes || 0}</span>
+                            </button>
+
+                            {/* Comment Accordion Trigger */}
+                            <button
+                              onClick={() => toggleComments(post.id)}
+                              className={`flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all ${
+                                isExpanded
+                                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                                  : 'bg-slate-950/40 border-slate-850 text-slate-400 hover:text-emerald-400 hover:border-emerald-500/20'
+                              }`}
+                            >
+                              <i className="fa-solid fa-comments"></i>
+                              <span>{post.comments.length}</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Collapsible Comments list */}
+                        {isExpanded && (
+                          <div className="mt-3 pt-3 border-t border-slate-900/60 space-y-3.5 fade-in">
+                            {/* Comments Header */}
+                            <h4 className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                              <i className="fa-solid fa-comment-dots text-emerald-400"></i>
+                              댓글 ({post.comments.length})
+                            </h4>
+
+                            {/* Comment Write Box */}
+                            <form onSubmit={(e) => handleAddComment(e, post.id)} className="bg-slate-950/50 p-3 border border-slate-850 rounded-xl space-y-2.5">
+                              <div className="grid grid-cols-2 gap-2 text-[10px]">
+                                <input
+                                  type="text"
+                                  placeholder="댓글 작성자"
+                                  value={cInputs.nickname}
+                                  onChange={e => handleCommentInputChange(post.id, 'nickname', e.target.value)}
+                                  className="bg-slate-900 border border-slate-850 rounded-lg px-2.5 py-1 text-slate-200 outline-none focus:border-emerald-500"
+                                />
+                                <input
+                                  type="password"
+                                  placeholder="비밀번호"
+                                  value={cInputs.password || ''}
+                                  onChange={e => handleCommentInputChange(post.id, 'password', e.target.value)}
+                                  className="bg-slate-900 border border-slate-850 rounded-lg px-2.5 py-1 text-slate-200 outline-none focus:border-emerald-500"
+                                />
+                              </div>
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  placeholder="댓글 내용을 작성하세요..."
+                                  value={cInputs.content || ''}
+                                  onChange={e => handleCommentInputChange(post.id, 'content', e.target.value)}
+                                  className="flex-1 bg-slate-900 border border-slate-850 rounded-lg px-3 py-1.5 text-[10.5px] text-slate-200 outline-none focus:border-emerald-500"
+                                />
+                                <button
+                                  type="submit"
+                                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg text-[10px] transition-colors"
+                                >
+                                  등록
+                                </button>
+                              </div>
+                            </form>
+
+                            {/* Render Comments List */}
+                            {rootComments.length === 0 ? (
+                              <p className="text-[10px] text-slate-500 italic pl-1">등록된 댓글이 없습니다. 첫 댓글을 남겨보세요!</p>
+                            ) : (
+                              <div className="space-y-3 pl-1">
+                                {rootComments.map(comment => {
+                                  // Fetch replies for this specific comment
+                                  const replies = post.comments.filter(c => c.parent_id === comment.id);
+                                  const rInputs = replyInputs[comment.id] || { nickname: localStorage.getItem('cached_nickname') || '', password: '', content: '' };
+
+                                  return (
+                                    <div key={comment.id} className="space-y-2">
+                                      {/* Parent Comment Card */}
+                                      <div className="bg-slate-950/40 p-2.5 border border-slate-900 rounded-xl space-y-1 relative group/comment">
+                                        {/* Delete Comment Button */}
+                                        <button
+                                          onClick={() => handleDeleteComment(comment.id, comment.password)}
+                                          className="absolute top-2.5 right-2.5 opacity-0 group-hover/comment:opacity-100 text-slate-500 hover:text-rose-400 transition-opacity text-[10px]"
+                                          title="댓글 삭제"
+                                        >
+                                          <i className="fa-solid fa-trash-can"></i>
+                                        </button>
+
+                                        <div className="flex justify-between items-center text-[9px] font-bold text-slate-400">
+                                          <span className="text-emerald-400">{comment.nickname}</span>
+                                          <span className="text-[8px] text-slate-600 pr-5">{new Date(comment.created_at).toLocaleString('ko-KR', { hour12: false })}</span>
+                                        </div>
+                                        <p className="text-[10.5px] text-slate-300 leading-normal">{comment.content}</p>
+
+                                        {/* Reply Trigger Button */}
+                                        <div className="pt-1 text-right">
+                                          <button
+                                            onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+                                            className="text-[8px] font-black text-slate-500 hover:text-emerald-400 transition-colors uppercase tracking-wider"
+                                          >
+                                            <i className="fa-solid fa-reply mr-1"></i>답글 달기
+                                          </button>
+                                        </div>
+                                      </div>
+
+                                      {/* Sub-reply Input Form (Inline) */}
+                                      {replyingTo === comment.id && (
+                                        <form onSubmit={(e) => handleAddReply(e, post.id, comment.id)} className="ml-6 bg-slate-950/70 p-2.5 border border-violet-500/20 rounded-xl space-y-2 fade-in">
+                                          <div className="text-[8.5px] font-bold text-violet-400 flex items-center gap-1">
+                                            <i className="fa-solid fa-turn-up fa-rotate-90"></i>
+                                            {comment.nickname} 님께 답글 작성
+                                          </div>
+                                          <div className="grid grid-cols-2 gap-2 text-[9px]">
+                                            <input
+                                              type="text"
+                                              placeholder="작성자"
+                                              value={rInputs.nickname}
+                                              onChange={e => handleReplyInputChange(comment.id, 'nickname', e.target.value)}
+                                              className="bg-slate-900 border border-slate-850 rounded-lg px-2 py-0.5 text-slate-200 outline-none focus:border-violet-500"
+                                            />
+                                            <input
+                                              type="password"
+                                              placeholder="비밀번호"
+                                              value={rInputs.password || ''}
+                                              onChange={e => handleReplyInputChange(comment.id, 'password', e.target.value)}
+                                              className="bg-slate-900 border border-slate-850 rounded-lg px-2 py-0.5 text-slate-200 outline-none focus:border-violet-500"
+                                            />
+                                          </div>
+                                          <div className="flex gap-2">
+                                            <input
+                                              type="text"
+                                              placeholder="답글 내용을 입력하세요..."
+                                              value={rInputs.content || ''}
+                                              onChange={e => handleReplyInputChange(comment.id, 'content', e.target.value)}
+                                              className="flex-1 bg-slate-900 border border-slate-850 rounded-lg px-2.5 py-1 text-[9.5px] text-slate-200 outline-none focus:border-violet-500"
+                                            />
+                                            <button
+                                              type="submit"
+                                              className="bg-violet-600 hover:bg-violet-500 text-white font-bold px-2.5 py-1 rounded-lg text-[9px] transition-colors"
+                                            >
+                                              등록
+                                            </button>
+                                          </div>
+                                        </form>
+                                      )}
+
+                                      {/* Nested Replies Rendering */}
+                                      {replies.map(reply => (
+                                        <div key={reply.id} className="ml-6 bg-slate-950/20 p-2.5 border-l-2 border-slate-800 rounded-r-xl space-y-1 relative group/reply flex gap-2">
+                                          {/* Arrow icon */}
+                                          <div className="text-slate-600 pt-0.5 text-[9px]">
+                                            <i className="fa-solid fa-turn-up fa-rotate-90"></i>
+                                          </div>
+                                          <div className="flex-1 space-y-1">
+                                            {/* Delete Reply Button */}
+                                            <button
+                                              onClick={() => handleDeleteComment(reply.id, reply.password)}
+                                              className="absolute top-2.5 right-2.5 opacity-0 group-hover/reply:opacity-100 text-slate-500 hover:text-rose-400 transition-opacity text-[10px]"
+                                              title="답글 삭제"
+                                            >
+                                              <i className="fa-solid fa-trash-can"></i>
+                                            </button>
+
+                                            <div className="flex justify-between items-center text-[9px] font-bold text-slate-400">
+                                              <span className="text-violet-400">{reply.nickname}</span>
+                                              <span className="text-[8px] text-slate-600 pr-5">{new Date(reply.created_at).toLocaleString('ko-KR', { hour12: false })}</span>
+                                            </div>
+                                            <p className="text-[10.5px] text-slate-300 leading-normal">{reply.content}</p>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             )}
@@ -3082,6 +3545,10 @@ JSON 구조 예시:
       // Selection drag-to-explain listener
       useEffect(() => {
         const handleMouseUp = () => {
+          if (activeTab === 'community') {
+            setSelectionMenu(prev => prev.isOpen ? { ...prev, isOpen: false } : prev);
+            return;
+          }
           setTimeout(() => {
             const selection = window.getSelection();
             const selectedText = selection.toString().trim();
@@ -3111,7 +3578,7 @@ JSON 구조 예시:
         return () => {
           document.removeEventListener('mouseup', handleMouseUp);
         };
-      }, [glossaryCache]);
+      }, [glossaryCache, activeTab]);
 
       const handleSearchSelection = async () => {
         const word = selectionMenu.text;
