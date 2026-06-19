@@ -1,0 +1,3479 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Semiconductor AI Academy Companion</title>
+  <meta name="description" content="반도체 8대 공정 학습 가이드, AI 트러블슈팅 챗봇, AI 자동 생성 퀴즈를 제공하는 스마트 교육 서비스">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            slate: {
+              50: 'rgb(var(--color-slate-50-rgb) / <alpha-value>)',
+              100: 'rgb(var(--color-slate-100-rgb) / <alpha-value>)',
+              200: 'rgb(var(--color-slate-200-rgb) / <alpha-value>)',
+              300: 'rgb(var(--color-slate-300-rgb) / <alpha-value>)',
+              400: 'rgb(var(--color-slate-400-rgb) / <alpha-value>)',
+              500: 'rgb(var(--color-slate-500-rgb) / <alpha-value>)',
+              600: 'rgb(var(--color-slate-600-rgb) / <alpha-value>)',
+              700: 'rgb(var(--color-slate-700-rgb) / <alpha-value>)',
+              800: 'rgb(var(--color-slate-800-rgb) / <alpha-value>)',
+              850: 'rgb(var(--color-slate-850-rgb) / <alpha-value>)',
+              900: 'rgb(var(--color-slate-900-rgb) / <alpha-value>)',
+              950: 'rgb(var(--color-slate-950-rgb) / <alpha-value>)',
+            },
+            nano: {
+              cyan: 'var(--color-nano-cyan)',
+              emerald: 'var(--color-nano-emerald)',
+              violet: 'var(--color-nano-violet)',
+              dark: 'rgb(var(--color-nano-dark-rgb) / <alpha-value>)'
+            }
+          },
+          fontFamily: {
+            sans: ['Hanken Grotesk', 'Geist', 'Outfit', 'Inter', 'Noto Sans KR', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Google Fonts & FontAwesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;600;700;900&family=Hanken+Grotesk:wght@300;400;600;700;900&family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@300;400;500;700&family=Noto+Sans+KR:wght@300;400;700;900&family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Mozilla PDF.js CDN for Client-side PDF Parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
+
+  <!-- Canvas Confetti CDN for visual celebration effects -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <!-- External Quiz Configuration Settings -->
+  <script src="./quiz-config.js"></script>
+
+  <!-- External API Keys Configuration -->
+  <script src="./api-keys.js"></script>
+
+  <!-- React & DOM via ESM Import Maps -->
+  <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.3.1",
+        "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+        "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime"
+      }
+    }
+  </script>
+  
+  <!-- Babel Standalone for JSX compilation in Browser -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <link rel="stylesheet" href="./index.css">
+  
+  <!-- PWA Configuration Meta Tags -->
+  <link rel="manifest" href="./manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="./icon.png">
+  <meta name="theme-color" content="#08132a">
+</head>
+<body class="relative w-screen h-screen">
+  
+  <!-- Back glows for semiconductor fab atmosphere -->
+  <div class="glow-bg w-[45vw] h-[45vw] bg-cyan-600 top-[-15%] left-[-10%]"></div>
+  <div class="glow-bg w-[50vw] h-[50vw] bg-violet-600 bottom-[-15%] right-[-10%]"></div>
+
+  <!-- React Mount Point -->
+  <div id="root" class="relative z-10 w-full h-full"></div>
+
+  <!-- External API Key Modal Component -->
+  <script type="text/babel" src="./api-key-modal.js"></script>
+
+  <!-- React Script block -->
+  <script type="text/babel" data-type="module">
+    import React, { useState, useEffect, useRef } from 'react';
+    import ReactDOM from 'react-dom/client';
+    window.React = React;
+    
+    // Import Supabase JS Client
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+    // --- 1. CONFIGURATION ---
+    // Ensure API keys array is populated
+    if (!window.GEMINI_API_KEYS || !Array.isArray(window.GEMINI_API_KEYS) || window.GEMINI_API_KEYS.length === 0) {
+      console.warn("warning: api-keys.js 파일이 없거나 API 키가 설정되지 않았습니다. 기본 키로 복구 시도합니다.");
+      window.GEMINI_API_KEYS = ["AIzaSyDummyDefaultKeyExhausted"];
+    }
+
+    let currentKeyIndex = 0;
+    const getGeminiApiKey = () => {
+      const keys = window.GEMINI_API_KEYS;
+      return keys[currentKeyIndex % keys.length];
+    };
+
+    const GEMINI_MODEL = "gemini-3.1-flash-lite"; // High-efficiency model with higher quota limit
+
+    // Supabase Credentials Map
+    const SUPABASE_URL = "https://utgkvwfqjmjdnfkaioxv.supabase.co"; 
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z2t2d2Zxam1qZG5ma2Fpb3h2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3ODMzNDUsImV4cCI6MjA5NzM1OTM0NX0.po8cB9Sk8N6KqTyE0JSGl8hfT83je2D-ecO8NDLLkRE";
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // 8대 공정 백서 데이터베이스
+    const PROCESS_DATA = [
+      {
+        id: 1,
+        name: "1. 웨이퍼 제조",
+        english: "Wafer Fabrication",
+        icon: "fa-circle-notch",
+        desc: "반도체 집적회로의 기판이 되는 고순도 단결정 실리콘 웨이퍼를 제조하는 기초 물리화학 공정입니다.\n\n1. 잉곳 성장 (Ingot Growth): 규석(규사)을 정제해 얻은 다결정 실리콘을 석영 도가니에 담아 1,425°C 이상으로 용융한 뒤, 원하는 결정 방향을 가진 단결정 시드(Seed)를 접촉시켜 회전시키며 위로 서서히 끌어올려 단결정 실리콘 원기둥인 잉곳을 성장시키는 쵸크랄스키(CZ, Czochralski)법이 주류를 이룹니다. 이 공정 중 석영 도가니가 미세하게 융해되며 산소 원자가 혼입되어 격자 결함을 억제하고 불순물을 트랩하는 내부 게터링(Internal Gettering) 효과를 제공합니다.\n\n2. 잉곳 가공 및 슬라이싱: 성장된 잉곳의 외경을 정밀하게 그라인딩한 후, Flat zone 또는 Notch를 형성하여 웨이퍼의 결정 방향을 표시합니다. 이후 다이아몬드 와이어 톱을 이용하여 얇고 평탄한 디스크 형태로 고속 슬라이싱(Slicing)합니다.\n\n3. 표면 연마 및 세정: 슬라이싱된 웨이퍼의 기계적 손상층을 화학 물질로 제거하는 에칭(Lapping/Etching) 공정을 거치고, 최종적으로 거울면처럼 매끄럽게 만들기 위해 콜로이달 실리카 슬러리와 미세 패드를 이용해 CMP(화학적 기계적 연마) 가공을 진행하는 폴리싱(Polishing) 단계를 거칩니다. 최종 두께 불균일성(TTV, Total Thickness Variation)을 수 나노미터 이내로 제어하는 것이 핵심입니다.",
+        keywords: ["실리콘 단결정", "잉곳 슬라이싱", "폴리싱 및 CMP", "초고순도 정제 (99.999999999%)", "쵸크랄스키(CZ)법", "TTV (두께 불균일)"],
+        troubles: ["웨이퍼 표면 미세 스크래치(Scratch)", "결정 구조적 결함(Crystal Defect)", "총 두께 변동(TTV) 불량", "격자 왜곡(Lattice Distortion)"]
+      },
+      {
+        id: 2,
+        name: "2. 산화 공정",
+        english: "Oxidation",
+        icon: "fa-fire-flame-simple",
+        desc: "웨이퍼 표면에 외부 오염물질 유입을 방지하고 전기적 누설을 제어하기 위한 전기적 절연막인 실리콘 산화막(SiO₂)을 물리화학적으로 형성하는 고열 화학적 반응 단계입니다.\n\n1. 열산화법 (Thermal Oxidation): 고온 산화 튜브 로(Furnace, 800°C~1,200°C) 내부에서 웨이퍼 표면의 실리콘 원자와 공급되는 산화 가스를 반응시켜 산화막을 자라나게 하는 건식 산화와 습식 산화로 구분됩니다.\n- 건식 산화 (Dry Oxidation): 순수 O₂ 가스를 산화제로 사용합니다. 반응 속도가 상대적으로 느리지만, 산화막 분자 결합 구조가 매우 치밀하고 계면 결함이 최소화되어 항전압(Breakdown voltage)이 높은 얇은 게이트 산화막(Gate Oxide) 형성에 필수적입니다.\n- 습식 산화 (Wet Oxidation): H₂O(수증기)를 산화제로 사용합니다. 물 분자는 이산화규소 막 내부로의 확산 계수가 건소 산소보다 훨씬 커 성장 속도가 5~10배 가량 빠릅니다. 다만, 막질 내 H-O 결함이 남아 상대적으로 전기적 신뢰도가 떨어지기 때문에 두꺼운 소자 격리용 필드 산화막(Field Oxide)이나 마스킹 박막에 적용됩니다.\n\n2. Deal-Grove 모델: 초기 성장은 계면 화학 반응(Reaction-limited) 속도에 지배를 받아 두께가 시간에 비례하여 선형적으로 자라지만, 막이 두꺼워질수록 산화제가 막 내부를 뚫고 들어가는 확산(Diffusion-limited) 속도에 지배를 받아 시간에 따른 제곱근 비례(Parabolic) 거동을 보입니다.",
+        keywords: ["열산화법 (Thermal)", "건식 산화(Dry Oxide)", "습식 산화(Wet Oxide)", "Deal-Grove 물리 모델", "게이트 절연막(SiO₂)", "절연막 두께 제어"],
+        troubles: ["산화막 핀홀(Pinhole) 누설", "산화막 표면 유해 이물질 잔존", "막 두께 불균일 전하 포획", "산화 속도 편차 불량", "실리콘 계면 댕글링 본드"]
+      },
+      {
+        id: 3,
+        name: "3. 포토 공정",
+        english: "Photolithography",
+        icon: "fa-camera",
+        desc: "반도체의 설계 회로 패턴을 노광 장비(Scanner)의 광원을 이용하여 웨이퍼 위의 감광성 유기막에 마킹하는 초정밀 광학 패턴 전사 공정입니다.\n\n1. 표면 개질 및 감광액 도포 (Spin Coating): 웨이퍼 표면을 소수성(Hydrophobic) 상태로 만들어 감광액(PR)의 접착력을 극대화하기 위해 HMDS(Hexamethyldisilazane) 가스를 분사합니다. 이후 스핀 코터(Spin Coater)의 고속 회전 원심력을 활용해 PR을 마이크로/나노 단위의 일정한 두께로 균일하게 코팅합니다.\n\n2. 연화 베이킹 (Soft Bake): 감광액 내부에 잔류하는 유기 용매(Solvent)를 열처리로 휘발시켜 막의 물리적 안정성을 향상시킵니다.\n\n3. 정밀 노광 (Exposure): 마스크(Mask)에 새겨진 미세 패턴을 노광원(Light Source)의 파장에 실어 축소 투영 렌즈계를 통해 웨이퍼에 조사합니다. 현대 공정에서는 KrF(248nm), ArF Immersion(193nm 액침 노광)을 거쳐 극단적으로 파장이 짧아 회로 선폭 한계를 돌파한 EUV(극자외선, 13.5nm) 노광 장비가 도입되어 나노미터 공정 마진을 극대화하고 있습니다.\n\n4. 노광 후 베이킹 (PEB): 노광된 감광막 내부에서 화학적 증폭제(PAG)의 확산을 촉진시켜 정상파(Standing Wave) 현상으로 인한 패턴 측면 주름을 줄이고 해상도를 개선합니다.\n\n5. 현상 (Development): 현상액(Developer)을 분사해 빛에 반응한 영역을 용해시켜 제거(Positive PR)하거나 반대로 빛을 받지 않은 영역을 씻어내어(Negative PR) 하부 에칭의 장벽이 될 감광 마스크 패턴을 최종 완성합니다.",
+        keywords: ["스핀 코팅", "PR(감광액) & HMDS", "EUV (극자외선, 13.5nm)", "현상 공정 (Develop)", "노광후 베이킹 (PEB)", "ASML 스캐너 노광 장비"],
+        troubles: ["감광 패턴 들뜸(PR Peeling)", "포커스 아웃 변형(Defocus)", "미세 찌꺼기 잔류(Scum)", "정상파 현상(Standing Wave)", "오버레이 정밀도(Overlay) 편차"]
+      },
+      {
+        id: 4,
+        name: "4. 식각 공정",
+        english: "Etching",
+        icon: "fa-scissors",
+        desc: "포토 공정을 통해 표면에 전사된 감광막(PR) 패턴의 보호 아래, 하부 박막 영역을 물리·화학적 메커니즘으로 깎아내어 타겟 회로 구조를 물리적으로 조각해 내는 감량 제조 공정입니다.\n\n1. 식각 특성 비교:\n- 등방성 식각 (Isotropic Etching): 화학적 식각액(Wet chemical)을 사용하는 습식 식각이 대표적입니다. 모든 방향으로 균일하게 깎이기 때문에 마스크 가장자리 아래쪽까지 갉아먹는 언더컷(Undercut) 현상이 심해 선폭 3um 이하의 미세 공정에는 제한적으로만 사용됩니다.\n- 이방성 식각 (Anisotropic Etching): 플라즈마 상태의 반응 가스를 챔버에서 이온화하고 전기장으로 직진 가속하는 건식 식각이 대표적입니다. 수직 방향으로 강하게 타격을 주어 패턴의 벽면을 경사 없이 직각 프로파일로 깎아냅니다.\n\n2. 반응성 이온 식각 (RIE, Reactive Ion Etching):\n현대 건식 식각은 단순히 물리적으로 이온 충돌만 주는 스퍼터 에칭(Physical sputtering)과 화학적으로 라디칼 반응만 유도하는 플라즈마 에칭의 장점을 융합한 RIE를 주로 씁니다. 가속된 활성 이온이 타격하여 하부 화학 반응 속도를 촉진(Ion-assisted)하기 때문에 이방성과 빠른 식각 속도를 동시에 달성합니다.\n\n3. 선택비 (Selectivity): 하부 박막을 깎는 동안 장벽 역할을 하는 감광막(PR)이나 정지 절연막(Etch Stop layer)이 지탱해야 하는 강도의 비율로, 높은 선택비를 얻는 가스 조합과 유량 제어가 미세 패턴 형성의 핵심입니다.",
+        keywords: ["플라즈마 가속 이온", "반응성 이온 식각 (RIE)", "이방성(Anisotropic) 수직 식각", "화학적 습식 식각(등방성)", "에칭 선택비 (Selectivity)", "언더컷 방지"],
+        troubles: ["언더컷(Undercut) 불량", "과도 식각(Over-etch) 하부 손상", "식각 잔여 이물질로 인한 쇼트", "로딩 효과(Loading Effect) 불균일", "식각 후 잔류 폴리머 고착"]
+      },
+      {
+        id: 5,
+        name: "5. 박막 증착",
+        english: "Thin Film Deposition",
+        icon: "fa-layer-group",
+        desc: "소자 간의 물리적 장벽 및 전기적 상호 연결을 보증하기 위해, 원자 또는 분자 단위의 매우 얇은 초박막(Thin film) 층을 기판 표면에 생성시키는 정밀 박막 적층 공정입니다.\n\n1. 물리 기상 증착 (PVD, Physical Vapor Deposition): 스퍼터링(Sputtering) 방식으로 챔버 내에서 불활성 가스인 아르곤 플라즈마를 발생시켜 음극 타겟을 타격하고, 튕겨 나온 표면 원자들이 웨이퍼에 침착되게 합니다. 단순 금속 박막 형성에 유리하지만 스텝 커버리지(Step Coverage, 복잡한 입체 패턴의 바닥과 측벽 두께 비율)가 불량한 단점이 있습니다.\n\n2. 화학 기상 증착 (CVD, Chemical Vapor Deposition): 챔버 외부에서 혼합 반응 가스를 주입하여 열, 플라즈마(PECVD) 등의 에너지를 기해 웨이퍼 표면에서 화학 흡착 반응을 일으켜 부산물은 기체로 배출하고 타겟 고체 막만 증착시킵니다. PVD보다 단차 피복성이 훌륭합니다.\n\n3. 원자층 증착 (ALD, Atomic Layer Deposition): 반응 가스인 전구체(Precursor)와 치환 가스(Purge)를 순차적으로 각각 나누어 투입(A단-퍼지-B단-퍼지 사이클 루프)하여 표면 자기제한 반응(Self-limiting surface reaction)을 활용해 두께를 원자 한 층 단위로 쌓아 올립니다. 속도는 다소 느리지만, 미세 홀 내부의 벽면에 이르기까지 100%에 근접하는 완벽한 스텝 커버리지와 수 나노미터 이하 극미세 두께 정밀 제어를 제공하여 최신 핀펫(FinFET) 및 GAA 소자 내 High-k 게이트 절연막 형성에 핵심적입니다.",
+        keywords: ["CVD (화학 기상 증착)", "ALD (원자층 증착)", "PVD 스퍼터링 물리 증착", "단차 피복성(Step Coverage)", "자기제한 반응(Self-limiting)", "전구체(Precursor) 반응"],
+        troubles: ["보이드(Void) 생성 내부 공동", "박막 들뜸 박리(Peeling)", "불균일한 두께 분포 및 거칠기", "불순물 혼입 및 막질 저하", "핀홀 결함 발생"]
+      },
+      {
+        id: 6,
+        name: "6. 금속 배선",
+        english: "Metallization",
+        icon: "fa-network-wired",
+        desc: "형성된 하부의 트랜지스터 개별 접점들을 유기적으로 결합하여 최종 전기 신호를 외부로 전달하기 위해 구리(Cu), 알루미늄(Al), 텅스텐(W) 등의 전도성 라인을 연결하는 가교 공정입니다.\n\n1. 텅스텐 콘택트: 하부 소자 접점에 직접 맞닿아 전류를 흘리는 통로인 미세한 컨택 플러그(Contact Plug) 부위에는 CVD 공정으로 채우기 용이하고 열팽창 안전성이 우수한 텅스텐이 주로 적용됩니다.\n\n2. 구리 다마신 (Copper Damascene) 공정: 구리는 알루미늄 대비 저항이 낮고 고속 전류에 적합하지만, 건식 식각이 불가능한 물리화학적 제약이 있습니다. 이를 극복하고자 절연막을 미리 에칭해 패턴 트렌치와 비아 홀(Via Hole)을 미리 파둔 다음, 구리가 주변 절연막으로 스며드는 것을 원천 방지하기 위해 얇은 장벽 금속(Ta/TaN Barrier Metal)을 증착합니다. 그 후 구리 시드층(Seed)을 입혀 전기도금(Electroplating) 기법으로 트렌치를 풍성히 채우고, 최종적으로 화학적 기계적 연마(CMP) 가공으로 표면을 깎아 평탄한 매립 배선을 획득하는 다마신(Damascene) 기술이 쓰입니다.\n\n3. 전자이동 (EM, Electromigration): 고전류 밀도 노출 시 전자의 흐름이 금속 원자를 함께 밀어붙여 원자가 한곳에 뭉쳐 쇼트를 유발하는 힐록(Hillock)이 생기거나, 반대로 원자가 비어 단선(Open)을 초래하는 보이드(Void)가 형성되는 고장을 유발합니다. 장벽 금속 결합력 향상이 수명 제어의 최대 쟁점입니다.",
+        keywords: ["구리 다마신 공정", "전기도금 (Electroplating)", "장벽 금속(Barrier Ta/TaN)", "EM (전자이동) 신뢰성", "CMP 평탄화 화학기계연마", "텅스텐 플러그"],
+        troubles: ["금속 라인 보이드 단선", "콘택트 전도성 저항 급증", "금속 배선의 융융 쇼트", "구리 원자 확산(Diffusion) 소자 오염", "스트레스 유도 보이드(SMV)"]
+      },
+      {
+        id: 7,
+        name: "7. 테스트 공정 (EDS)",
+        english: "Electrical Die Sorting",
+        icon: "fa-microchip",
+        desc: "웨이퍼 레벨에서 가공 완료된 모든 개별 다이(Die)의 동작과 성능 신뢰성을 검증하고 수율(Yield) 정보를 도출하여 백엔드 가공으로 넘어가기 전 스크리닝하는 정밀 계측·진단 공정입니다.\n\n1. 정밀 전기 변수 검사 (Electrical Parameters Test): 웨이퍼 위에 놓인 테스트용 소자인 TEG(Test Element Group) 회로의 동작 마진을 파악하여 전공정 상의 가공 정밀도 및 편차를 분석합니다.\n\n2. 프로브 테스트 (Probe Test): 미세 정밀 수백만 개의 수평형/수직형 바늘 핀이 탑재된 프로브 카드(Probe Card)를 활용하여 개별 칩 단자에 직접 밀착 접촉시키고, 전기 신호를 프로브 스테이션 테스터기로부터 흘려보내 동작 정상 여부를 고속 진단합니다. 온도가 급상승하거나 내려간 혹혹한 챔버 열환경 테스트도 수반됩니다.\n\n3. 리페어 (Repair/Redundancy) 공정: 메모리 반도체 등의 칩 내부에는 여분의 대체용 셀 회로인 리던던시(Redundancy) 영역이 설계되어 있습니다. 프로브 테스트에서 특정 어드레스 셀의 불량이 확인되면, 해당 열/행 회로 라인을 끊고 여분 셀로 대체 전환하도록 물리적인 레이저 빔 패키지 커팅 퓨즈 컷(Laser Fusing) 또는 전기적 안티퓨즈(E-Fuse) 쓰기 가공을 진행하여 최종 정상품 수율로 극적 구제합니다.",
+        keywords: ["프로브 카드 핀", "수율(Yield) 진단", "리페어(Repair) 가공", "퓨즈 컷(Laser Fusing)", "TEG (테스트그룹) 동작", "이퓨즈(E-Fuse) 전기 복구"],
+        troubles: ["프로브 핀 접촉 손실", "전기 매개변수 편차 실패", "정상 칩의 불량 오판정(Overkill)", "퓨즈 컷팅 마진 부족 불완전 리페어", "고온 테스트 시 칩 열폭주"]
+      },
+      {
+        id: 8,
+        name: "8. 패키징",
+        english: "Packaging",
+        icon: "fa-box-archive",
+        desc: "전공정이 끝난 웨이퍼로부터 낱개 칩들을 물리적으로 분할하여, 기계적 내충격성 및 외부 습기로부터 반도체를 완전 격리 보호하고 메인보드에 신호 연동이 가능하게 연장 단자를 조립해 최종 제품화하는 후공정 패키지 단계입니다.\n\n1. 백 그라인딩 및 다이싱 (Dicing): 웨이퍼 배면을 마이크로 그라인더로 얇게 갈아내어 두께를 줄인 후, 다이아몬드 고속 휠 톱(Dicing Saw) 또는 레이저 빔을 활용하여 칩들을 격자 형상으로 조각 조각 분리해 냅니다.\n\n2. 연결 및 부착 공정:\n- 와이어 본딩 (Wire Bonding): 캐필러리 툴로 얇은 금(Au) 또는 구리 선을 사용하여 높은 초음파 열압착 에너지로 칩 패드와 기판의 단자를 연결하는 정통 방식입니다.\n- 플립칩 본딩 (Flip Chip Bumping): 전송 경로가 길어지는 와이어 대신, 칩 패드 상단에 Sn-Ag(주석-은) 성분의 미세한 돌기(솔더 범프, Bump)를 올린 뒤 칩을 거꾸로 뒤집어(Flip) 기판에 솔더 본딩을 유도하는 저저항 고속 접속 기술입니다.\n\n3. 실리콘 관통 전극 (TSV, Through Silicon Via) & HBM: D램 메모리를 여러 개 적층할 때 기존 와이어를 아예 제거하고 칩 자체에 미세 구멍을 뚫어 전도성 전극을 채워 수직 통로를 뚫어내는 초고대역폭(HBM) 핵심 실리콘관통전극 기술입니다. 칩 적층 시 칩 사이의 빈틈에 비전도성 필름(NCF)을 삽입하거나, 대단위 액체 에폭시를 주입해 경화시키는 열압착 수지 주입(MR-MUF) 방식을 채택합니다.\n\n4. Molding (몰딩): 최종적으로 충격 방지를 위해 액상의 에폭시 밀봉재(EMC)를 고열 압착 금형틀 내에 주입한 뒤 경화하여 소자를 단단하게 밀봉(Encapsulation)합니다.",
+        keywords: ["와이어 본딩", "플립칩 범프 (Bumping)", "TSV 수직 관통 전극", "EMC 몰딩 봉지재", "HBM (고대역폭 메모리)", "MR-MUF 수지 적층", "NCF 접착 필름"],
+        troubles: ["솔더 조인트 미세 균열(Solder Crack)", "몰딩재 내부 기포 보이드", "와이어 본드 쇼트", "TSV 내부 전도성 충전 보이드 단선", "휨 현상(Warpage) 열 변형"]
+      }
+    ];
+
+    // 단어 해설 사전 데이터베이스 (Glossary Database)
+    const GLOSSARY_DB = {
+      "EUV": "Extreme UltraViolet (극자외선). 파장이 13.5nm인 광원으로, 7nm 이하 미세 회로 패턴 공정을 그릴 때 사용하는 최첨단 노광 기술입니다.",
+      "ALD": "Atomic Layer Deposition (원자층 증착법). 화학 물질 반응을 기체 상태에서 주기적으로 교대로 주입하여 원자 단일 두께만큼 증착하는 방식. 균일도가 최상입니다.",
+      "CVD": "Chemical Vapor Deposition (화학 기상 증착법). 가스 혼합물의 화학 반응을 유도하여 웨이퍼 표면에 고체 박막을 코팅하는 반도체 기본 증착 기법입니다.",
+      "PR": "Photoresist (감광액). 노광 장비에서 쏘는 빛에 반응하여 물리·화학적 특성이 변해 식각 저항 패턴을 만들어내는 고분자 화학 유기액입니다.",
+      "잉곳": "Ingot. 실리콘 모래 규사를 고열로 녹여 원통 형태로 서서히 굳힌 고순도 단결정 실리콘 덩어리입니다. 웨이퍼의 모체가 됩니다.",
+      "핀홀": "Pinhole. 산화 공정이나 증착 공정에서 유입된 이물질이나 두께 불균일로 인해 박막에 미세한 구멍이 뚫리는 불량 현상입니다.",
+      "언더컷": "Undercut. 식각 공정에서 가로 방향 침식 현상으로 인해 마스크 패턴 아래 부분이 의도치 않게 추가로 깎여나가 단면이 깊게 파이는 불량입니다.",
+      "EDS": "Electrical Die Sorting. 가공된 웨이퍼 내부의 개별 칩 동작 유무를 검사하기 위해 핀을 밀착시켜 전기 흐름과 수율을 진단하는 테스트 단계입니다.",
+      "TSV": "Through Silicon Via (실리콘 관통 전극). 디램 반도체 칩을 가로질러 미세한 구멍을 내고 전도 금속을 부어 수직 연결하는 고집적 통로 기술입니다.",
+      "보이드": "Void. 금속 배선이나 박막 증착 시 미세 틈새가 막에 완벽히 채워지지 않아 내부가 비어버리는 공동 현상으로, 전류를 방해해 단선을 유발합니다.",
+      "HBM": "High Bandwidth Memory (고대역폭 메모리). 여러 개의 D램을 수직으로 TSV 공법으로 적층해 메모리 데이터 처리 통로(대역폭)를 대폭 확장한 AI 특화 초고속 메모리입니다."
+    };
+
+    // Helper: Detailed API response debugging logic with automatic key failover on Quota/Limit
+    // Helper: Detailed API response debugging logic with automatic key failover on Quota/Limit
+    const getGeminiResponse = async (payloadOrText) => {
+      // 1. Check if user set a personal API key in LocalStorage
+      const userKey = localStorage.getItem('user_gemini_api_key');
+      if (userKey && userKey.trim()) {
+        try {
+          const bodyObj = typeof payloadOrText === 'string'
+            ? { contents: [{ parts: [{ text: payloadOrText }] }] }
+            : payloadOrText;
+
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${userKey.trim()}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(bodyObj)
+          });
+
+          if (!response.ok) {
+            let errDetail = `Status: ${response.status} (${response.statusText})`;
+            try {
+              const errJson = await response.json();
+              errDetail += `\nMessage: ${errJson?.error?.message || 'Unknown'}`;
+            } catch(e) {}
+            window.dispatchEvent(new CustomEvent('open-api-key-modal'));
+            throw new Error(`[개인 API 키 오류] ${errDetail}`);
+          }
+
+          const resData = await response.json();
+          return resData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        } catch (err) {
+          console.error("개인 Gemini AI API 호출 중 오류 발생:", err);
+          throw err;
+        }
+      } else {
+        const keys = window.GEMINI_API_KEYS || [];
+        if (keys.length === 0 || (keys.length === 1 && keys[0].includes("Dummy"))) {
+          window.dispatchEvent(new CustomEvent('open-api-key-modal'));
+          throw new Error("개인 API 키가 등록되지 않았습니다. 상단 헤더(모바일) 또는 좌측 사이드바(데스크톱)의 '🔑 API 키' 설정 버튼을 눌러 Google AI Studio에서 무료 API 키를 발급받아 등록해 주세요.");
+        }
+      }
+
+      // 2. Fallback: Default rotated keys
+      const keys = window.GEMINI_API_KEYS || [];
+      const maxAttempts = Math.max(1, keys.length);
+      
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const apiKey = getGeminiApiKey();
+        try {
+          const bodyObj = typeof payloadOrText === 'string'
+            ? { contents: [{ parts: [{ text: payloadOrText }] }] }
+            : payloadOrText;
+
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(bodyObj)
+          });
+
+          const isQuotaError = response.status === 429;
+          let errDetail = "";
+          let errJson = null;
+
+          if (!response.ok) {
+            errDetail = `Status: ${response.status} (${response.statusText})`;
+            try {
+              errJson = await response.json();
+              errDetail += `\nMessage: ${errJson?.error?.message || 'Unknown'}`;
+            } catch(e) {}
+          }
+
+          const isMessageQuotaError = errJson?.error?.message?.toLowerCase().includes("quota") || 
+                                      errJson?.error?.message?.toLowerCase().includes("resource_exhausted") ||
+                                      errJson?.error?.status === "RESOURCE_EXHAUSTED";
+
+          if (isQuotaError || isMessageQuotaError) {
+            if (keys.length > 1 && attempt < keys.length - 1) {
+              console.warn(`[API Key Failover] Key index ${currentKeyIndex} exhausted (Quota/Rate Limit). Retrying with next key...`);
+              currentKeyIndex++;
+              continue;
+            }
+          }
+
+          if (!response.ok) {
+            throw new Error(errDetail);
+          }
+
+          const resData = errJson || await response.json();
+          return resData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        } catch (err) {
+          const isRateLimitOrQuota = err.message?.toLowerCase().includes("quota") || 
+                                     err.message?.toLowerCase().includes("exhausted") ||
+                                     err.message?.toLowerCase().includes("429");
+          if (isRateLimitOrQuota && keys.length > 1 && attempt < keys.length - 1) {
+            console.warn(`[API Key Failover] Error encountered: ${err.message}. Retrying with next key...`);
+            currentKeyIndex++;
+            continue;
+          }
+          console.error("Gemini AI API 호출 중 오류 발생:", err);
+          throw err;
+        }
+      }
+    };
+
+    // New helper for SSE streaming responses from Gemini API with automatic key failover
+    const getGeminiResponseStream = async (payloadOrText, onChunk, onError) => {
+      // 1. Check if user set a personal API key in LocalStorage
+      const userKey = localStorage.getItem('user_gemini_api_key');
+      if (userKey && userKey.trim()) {
+        try {
+          const bodyObj = typeof payloadOrText === 'string'
+            ? { contents: [{ parts: [{ text: payloadOrText }] }] }
+            : payloadOrText;
+
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?key=${userKey.trim()}&alt=sse`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(bodyObj)
+          });
+
+          if (!response.ok) {
+            let errDetail = `Status: ${response.status} (${response.statusText})`;
+            try {
+              const errJson = await response.json();
+              errDetail += `\nMessage: ${errJson?.error?.message || 'Unknown'}`;
+            } catch(e) {}
+            window.dispatchEvent(new CustomEvent('open-api-key-modal'));
+            throw new Error(`[개인 API 키 스트리밍 오류] ${errDetail}`);
+          }
+
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder("utf-8");
+          let buffer = "";
+
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            
+            const lines = buffer.split("\n");
+            buffer = lines.pop();
+            
+            for (const line of lines) {
+              const trimmedLine = line.trim();
+              if (trimmedLine.startsWith("data: ")) {
+                const dataStr = trimmedLine.slice(6).trim();
+                if (dataStr) {
+                  try {
+                    const parsed = JSON.parse(dataStr);
+                    const chunkText = parsed?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                    if (chunkText) {
+                      onChunk(chunkText);
+                    }
+                  } catch(e) {}
+                }
+              }
+            }
+          }
+          return;
+        } catch (err) {
+          console.error("개인 Gemini AI API 스트리밍 호출 중 오류 발생:", err);
+          onError(err);
+          return;
+        }
+      } else {
+        const keys = window.GEMINI_API_KEYS || [];
+        if (keys.length === 0 || (keys.length === 1 && keys[0].includes("Dummy"))) {
+          const errMsg = new Error("개인 API 키가 등록되지 않았습니다. 상단 헤더(모바일) 또는 좌측 사이드바(데스크톱)의 '🔑 API 키' 설정 버튼을 눌러 Google AI Studio에서 무료 API 키를 발급받아 등록해 주세요.");
+          window.dispatchEvent(new CustomEvent('open-api-key-modal'));
+          onError(errMsg);
+          return;
+        }
+      }
+
+      // 2. Fallback: Default rotated keys
+      const keys = window.GEMINI_API_KEYS || [];
+      const maxAttempts = Math.max(1, keys.length);
+
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const apiKey = getGeminiApiKey();
+        try {
+          const bodyObj = typeof payloadOrText === 'string'
+            ? { contents: [{ parts: [{ text: payloadOrText }] }] }
+            : payloadOrText;
+
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?key=${apiKey}&alt=sse`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(bodyObj)
+          });
+
+          const isQuotaError = response.status === 429;
+          let errDetail = "";
+          let errJson = null;
+
+          if (!response.ok) {
+            errDetail = `Status: ${response.status} (${response.statusText})`;
+            try {
+              errJson = await response.json();
+              errDetail += `\nMessage: ${errJson?.error?.message || 'Unknown'}`;
+            } catch(e) {}
+          }
+
+          const isMessageQuotaError = errJson?.error?.message?.toLowerCase().includes("quota") || 
+                                      errJson?.error?.message?.toLowerCase().includes("resource_exhausted") ||
+                                      errJson?.error?.status === "RESOURCE_EXHAUSTED";
+
+          if (isQuotaError || isMessageQuotaError) {
+            if (keys.length > 1 && attempt < keys.length - 1) {
+              console.warn(`[API Key Failover] Streaming Key index ${currentKeyIndex} exhausted (Quota/Rate Limit). Retrying with next key...`);
+              currentKeyIndex++;
+              continue;
+            }
+          }
+
+          if (!response.ok) {
+            throw new Error(errDetail);
+          }
+
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder("utf-8");
+          let buffer = "";
+
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            
+            const lines = buffer.split("\n");
+            buffer = lines.pop(); // Keep incomplete line in buffer
+            
+            for (const line of lines) {
+              const trimmedLine = line.trim();
+              if (trimmedLine.startsWith("data: ")) {
+                const dataStr = trimmedLine.slice(6).trim();
+                if (dataStr) {
+                  try {
+                    const parsed = JSON.parse(dataStr);
+                    const chunkText = parsed?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                    if (chunkText) {
+                      onChunk(chunkText);
+                    }
+                  } catch(e) {
+                    // Partial/invalid JSON can occur, ignore
+                  }
+                }
+              }
+            }
+          }
+          return; // Success, exit
+        } catch (err) {
+          const isRateLimitOrQuota = err.message?.toLowerCase().includes("quota") || 
+                                     err.message?.toLowerCase().includes("exhausted") ||
+                                     err.message?.toLowerCase().includes("429");
+          if (isRateLimitOrQuota && keys.length > 1 && attempt < keys.length - 1) {
+            console.warn(`[API Key Failover] Streaming error encountered: ${err.message}. Retrying with next key...`);
+            currentKeyIndex++;
+            continue;
+          }
+          console.error("Gemini AI API 스트리밍 호출 중 오류 발생:", err);
+          onError(err);
+          return;
+        }
+      }
+    };
+
+    // Helper to perform Fisher-Yates array shuffle
+    const shuffleArray = (array) => {
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    };
+
+    // Helper to shuffle both the order of questions and their answer choices (if multiple-choice)
+    const prepareQuestions = (rawQuestions) => {
+      const shuffledList = shuffleArray(rawQuestions);
+      return shuffledList.map(q => {
+        if (q.type === 'choice' && Array.isArray(q.options) && q.options.length > 0) {
+          // Map options to keep track of their original indices
+          const optionsWithIdx = q.options.map((opt, idx) => ({ text: opt, originalIndex: String(idx) }));
+          const shuffledOptions = shuffleArray(optionsWithIdx);
+          
+          // Re-calculate the correct answer's new index
+          const newAnswerIndex = shuffledOptions.findIndex(item => item.originalIndex === q.answer);
+          
+          return {
+            ...q,
+            options: shuffledOptions.map(item => item.text),
+            answer: String(newAnswerIndex === -1 ? q.answer : newAnswerIndex)
+          };
+        }
+        return q;
+      });
+    };
+
+    // Helper to dynamically adapt a question to a target type (choice, ox, short)
+    const adaptQuestionToType = (q, targetType, allQuestions) => {
+      if (!q) return q;
+      if (q.type === targetType) return { ...q };
+
+      const getDistractorsForShort = (correctAnswer) => {
+        const candidates = allQuestions
+          .filter(item => item.id !== q.id)
+          .map(item => {
+            if (item.type === 'short') return item.answer;
+            if (item.type === 'choice' && Array.isArray(item.options)) {
+              const correctIdx = Number(item.answer);
+              return item.options[correctIdx];
+            }
+            return null;
+          })
+          .filter(ans => ans && ans.trim().toLowerCase() !== correctAnswer.trim().toLowerCase());
+        
+        const unique = [...new Set(candidates)];
+        return shuffleArray(unique).slice(0, 3);
+      };
+
+      const cleanTextForEnd = (txt) => {
+        return txt.trim().replace(/[.?]$/, '');
+      };
+
+      const cleanChoiceAnswer = (text) => {
+        if (!text) return '';
+        let cleaned = text.replace(/\([^)]*\)/g, '').trim();
+        cleaned = cleaned.replace(/(공법|공정|장비|기법|원리|현상)$/, '').trim();
+        return cleaned || text;
+      };
+
+      // 1. Target: CHOICE
+      if (targetType === 'choice') {
+        if (q.type === 'ox') {
+          return {
+            ...q,
+            type: 'choice',
+            options: ["그렇다 (O / 참)", "그렇지 않다 (X / 거짓)"],
+            answer: q.answer.toUpperCase() === 'O' ? "0" : "1",
+            question: `다음 설명의 진위여부로 올바른 것은 무엇입니까?\n\n"${q.question}"`
+          };
+        } else if (q.type === 'short') {
+          const distractors = getDistractorsForShort(q.answer);
+          while (distractors.length < 3) {
+            distractors.push("해당 없음", "기타 공정 변수", "이물질 결함");
+          }
+          const options = [q.answer, ...distractors.slice(0, 3)];
+          return {
+            ...q,
+            type: 'choice',
+            options: options,
+            answer: "0" // Will be shuffled by prepareQuestions
+          };
+        }
+      }
+
+      // 2. Target: OX
+      if (targetType === 'ox') {
+        const isCorrect = Math.random() > 0.5;
+        if (q.type === 'choice') {
+          const correctIdx = Number(q.answer);
+          const correctText = q.options[correctIdx];
+          if (isCorrect) {
+            return {
+              ...q,
+              type: 'ox',
+              options: ["O", "X"],
+              answer: "O",
+              question: `다음 설명이 맞는지 판별하십시오.\n\n"${cleanTextForEnd(q.question)}의 올바른 답은 '${correctText}'이다."`
+            };
+          } else {
+            const wrongIndices = q.options.map((_, i) => i).filter(i => i !== correctIdx);
+            const wrongIdx = wrongIndices[Math.floor(Math.random() * wrongIndices.length)];
+            const wrongText = q.options[wrongIdx];
+            return {
+              ...q,
+              type: 'ox',
+              options: ["O", "X"],
+              answer: "X",
+              question: `다음 설명이 맞는지 판별하십시오.\n\n"${cleanTextForEnd(q.question)}의 올바른 답은 '${wrongText}'이다."`
+            };
+          }
+        } else if (q.type === 'short') {
+          if (isCorrect) {
+            return {
+              ...q,
+              type: 'ox',
+              options: ["O", "X"],
+              answer: "O",
+              question: `다음 설명이 맞는지 판별하십시오.\n\n"${cleanTextForEnd(q.question)}에 대한 올바른 명칭은 '${q.answer}'이다."`
+            };
+          } else {
+            const distractors = getDistractorsForShort(q.answer);
+            const wrongText = distractors[0] || "잘못된 공정 용어";
+            return {
+              ...q,
+              type: 'ox',
+              options: ["O", "X"],
+              answer: "X",
+              question: `다음 설명이 맞는지 판별하십시오.\n\n"${cleanTextForEnd(q.question)}에 대한 올바른 명칭은 '${wrongText}'이다."`
+            };
+          }
+        }
+      }
+
+      // 3. Target: SHORT
+      if (targetType === 'short') {
+        if (q.type === 'choice') {
+          const correctIdx = Number(q.answer);
+          const correctText = q.options[correctIdx];
+          const cleanedAns = cleanChoiceAnswer(correctText);
+          return {
+            ...q,
+            type: 'short',
+            options: [],
+            answer: cleanedAns,
+            question: `${q.question} (보기 없이 주관식 단답으로 입력하세요. 힌트: ${cleanedAns.length}글자)`
+          };
+        } else if (q.type === 'ox') {
+          return {
+            ...q,
+            type: 'short',
+            options: [],
+            answer: q.answer,
+            question: `${q.question} (O 또는 X로 입력하세요)`
+          };
+        }
+      }
+
+      return { ...q };
+    };
+
+    // --- 2. INTERACTIVE TEXT WRAPPER COMPONENT ---
+    const InteractiveText = ({ text, onHoverWord, onLeaveWord }) => {
+      if (!text) return null;
+      
+      const terms = Object.keys(GLOSSARY_DB);
+      const regex = new RegExp(`(${terms.join('|')})`, 'g');
+      const parts = text.split(regex);
+      
+      return (
+        <span>
+          {parts.map((part, idx) => {
+            if (terms.includes(part)) {
+              return (
+                <span 
+                  key={idx}
+                  className="term-highlight font-bold"
+                  onMouseEnter={(e) => onHoverWord(part, e)}
+                  onMouseLeave={onLeaveWord}
+                >
+                  {part}
+                </span>
+              );
+            }
+            return part;
+          })}
+        </span>
+      );
+    };
+
+    // --- 3. HIDING PDF UPLOAD: POPUP MODAL COMPONENT ---
+    const PROCESS_KEYWORDS = {
+      "1": ["웨이퍼", "실리콘", "단결정", "잉곳", "슬라이스", "폴리싱", "쵸크랄스키", "CZ", "wafer", "ingot"],
+      "2": ["산화", "절연막", "sio₂", "열산화", "건식", "습식", "oxidation", "oxide"],
+      "3": ["포토", "감광", "노광", "pr", "현상", "euv", "마스크", "asml", "photolithography", "exposure"],
+      "4": ["식각", "플라즈마", "rie", "이방성", "등방성", "에칭", "etch", "etching"],
+      "5": ["박막", "증착", "cvd", "ald", "pvd", "스퍼터링", "커버리지", "deposition", "film"],
+      "6": ["금속", "배선", "다마신", "텅스텐", "구리", "도금", "em", "metallization", "copper"],
+      "7": ["테스트", "eds", "프로브", "수율", "리페어", "퓨즈", "yield", "test", "probe"],
+      "8": ["패키징", "다이싱", "본딩", "tsv", "hbm", "몰딩", "emc", "ncf", "packaging", "package"]
+    };
+
+    const filterTextByKeywords = (text, keywords) => {
+      if (!keywords || keywords.length === 0) return text;
+      const paragraphs = text.split(/\n+/);
+      const filtered = paragraphs.filter(para => {
+        const lowerPara = para.toLowerCase();
+        return keywords.some(keyword => lowerPara.includes(keyword.toLowerCase()));
+      });
+      return filtered.join("\n\n");
+    };
+
+    const PdfUploadModal = ({ isOpen, onClose, pdfText, setPdfText, onTriggerPrefetch }) => {
+      const [isPdfLoading, setIsPdfLoading] = useState(false);
+      const [step, setStep] = useState('select_file'); // select_file, configure
+      const [pdfDoc, setPdfDoc] = useState(null);
+      const [totalPages, setTotalPages] = useState(0);
+      const [fileName, setFileName] = useState('');
+      const [docScope, setDocScope] = useState('all'); // all, specific
+      const [selectedSector, setSelectedSector] = useState('1');
+      const [startPage, setStartPage] = useState(1);
+      const [endPage, setEndPage] = useState(1);
+      const [useSmartFilter, setUseSmartFilter] = useState(false);
+      
+      const fileInputRef = useRef(null);
+
+      useEffect(() => {
+        if (isOpen) {
+          setStep('select_file');
+          setPdfDoc(null);
+          setFileName('');
+          setTotalPages(0);
+          setDocScope('all');
+          setSelectedSector('1');
+          setStartPage(1);
+          setEndPage(1);
+          setUseSmartFilter(false);
+        }
+      }, [isOpen]);
+
+      if (!isOpen) return null;
+
+      const handleFileSelected = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setIsPdfLoading(true);
+
+        try {
+          const fileReader = new FileReader();
+          fileReader.readAsArrayBuffer(file);
+          fileReader.onload = async () => {
+            try {
+              const arrayBuffer = fileReader.result;
+              const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+              
+              setPdfDoc(pdf);
+              setTotalPages(pdf.numPages);
+              setFileName(file.name);
+              setStartPage(1);
+              setEndPage(pdf.numPages);
+              setStep('configure');
+            } catch(innerErr) {
+              alert(`PDF 파일 분석 실패: ${innerErr.message}`);
+              if (fileInputRef.current) fileInputRef.current.value = "";
+            } finally {
+              setIsPdfLoading(false);
+            }
+          };
+        } catch (err) {
+          alert(`파일 읽기 오류: ${err.message}`);
+          setIsPdfLoading(false);
+        }
+      };
+
+      const handleExtractText = async () => {
+        if (!pdfDoc) return;
+        
+        const start = parseInt(startPage, 10);
+        const end = parseInt(endPage, 10);
+        
+        if (isNaN(start) || isNaN(end) || start < 1 || end > totalPages || start > end) {
+          alert(`올바른 페이지 범위를 입력해 주세요. (1 ~ ${totalPages} 사이)`);
+          return;
+        }
+
+        setIsPdfLoading(true);
+        try {
+          let fullText = "";
+          for (let i = start; i <= end; i++) {
+            const page = await pdfDoc.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map(item => item.str).join(" ");
+            fullText += pageText + "\n";
+          }
+
+          if (fullText.trim().length === 0) {
+            throw new Error("지정한 페이지 범위 내에서 텍스트를 추출하지 못했습니다.");
+          }
+
+          let processedText = fullText;
+          let filterApplied = false;
+
+          if (docScope === 'specific' && useSmartFilter) {
+            const keywords = PROCESS_KEYWORDS[selectedSector];
+            const filtered = filterTextByKeywords(fullText, keywords);
+            if (filtered.trim().length > 0) {
+              processedText = filtered;
+              filterApplied = true;
+            } else {
+              alert(`선택하신 공정 키워드(예: ${keywords.slice(0, 3).join(', ')})가 포함된 단락을 찾지 못해 전체 페이지 내용을 추출합니다.`);
+            }
+          }
+
+          const finalSlicedText = processedText.slice(0, 10000);
+          setPdfText(finalSlicedText);
+          onTriggerPrefetch(finalSlicedText);
+
+          let alertMsg = `PDF 분석 완료! (${start} ~ ${end} 페이지)\n`;
+          if (filterApplied) {
+            alertMsg += `✨ 스마트 필터 가동: 선택 공정 키워드 관련 핵심 내용만 필터링하여 압축 추출했습니다. (토큰 절약)`;
+          } else {
+            alertMsg += `전체 본문 텍스트가 정상 추출되었습니다.`;
+          }
+          alert(alertMsg);
+          onClose();
+        } catch (err) {
+          alert(`텍스트 추출 오류: ${err.message}`);
+        } finally {
+          setIsPdfLoading(false);
+        }
+      };
+
+      return (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800/80 rounded-2xl w-full max-w-sm p-5 shadow-2xl relative fade-in">
+            <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-200">✕</button>
+            <h3 className="text-sm font-bold text-slate-100 flex items-center gap-1.5 mb-2">
+              <i className="fa-solid fa-file-pdf text-cyan-400"></i>
+              학습용 교재 PDF 연동 설정
+            </h3>
+
+            {step === 'select_file' ? (
+              <>
+                <p className="text-[10.5px] text-slate-400 mb-4 leading-relaxed">
+                  반도체 공정 관련 PDF 파일(논문, 강의자료 등)을 업로드하면 브라우저 내에서 텍스트를 자동 파싱하여 AI 질의 및 퀴즈 출제 지식으로 연동합니다.
+                </p>
+
+                <div className="space-y-3">
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    accept="application/pdf" 
+                    onChange={handleFileSelected} 
+                    className="hidden" 
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isPdfLoading}
+                    className="w-full bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-800 text-white font-extrabold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    {isPdfLoading ? (
+                      <>
+                        <i className="fa-solid fa-spinner fa-spin"></i>
+                        PDF 메타데이터 가져오는 중...
+                      </>
+                    ) : (
+                      <>
+                        <i className="fa-solid fa-upload"></i>
+                        PDF 파일 가져오기
+                      </>
+                    )}
+                  </button>
+
+                  {pdfText && (
+                    <div className="bg-slate-950/60 p-2.5 border border-slate-800 rounded-xl text-[10px] flex justify-between items-center text-slate-400 mt-2">
+                      <span className="truncate max-w-[200px]"><i className="fa-solid fa-circle-check text-emerald-400 mr-1"></i>텍스트 데이터 연동 활성화됨</span>
+                      <button 
+                        onClick={() => { setPdfText(""); if (fileInputRef.current) fileInputRef.current.value = ""; onClose(); }}
+                        className="text-rose-400 hover:text-rose-300 font-bold"
+                      >
+                        해제
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="space-y-4 text-xs mt-3">
+                {/* File summary */}
+                <div className="bg-slate-950/50 p-2.5 border border-slate-800/80 rounded-xl space-y-1">
+                  <div className="text-[10px] text-slate-400 font-bold flex justify-between">
+                    <span>파일명:</span>
+                    <span className="text-slate-200 truncate max-w-[180px]">{fileName}</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-bold flex justify-between">
+                    <span>총 페이지 수:</span>
+                    <span className="text-slate-200">{totalPages}페이지</span>
+                  </div>
+                </div>
+
+                {/* Scope selection */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] text-slate-400 font-bold">1. 문서 지식 범위</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setDocScope('all'); setUseSmartFilter(false); }}
+                      className={`py-1.5 px-2 rounded-lg border font-bold text-[10.5px] transition-all text-center ${
+                        docScope === 'all'
+                          ? 'bg-cyan-600/10 border-cyan-500 text-cyan-400'
+                          : 'bg-slate-950/40 border-slate-850 text-slate-400'
+                      }`}
+                    >
+                      8대 공정 통합문서
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDocScope('specific')}
+                      className={`py-1.5 px-2 rounded-lg border font-bold text-[10.5px] transition-all text-center ${
+                        docScope === 'specific'
+                          ? 'bg-cyan-600/10 border-cyan-500 text-cyan-400'
+                          : 'bg-slate-950/40 border-slate-850 text-slate-400'
+                      }`}
+                    >
+                      특정 공정 전문교재
+                    </button>
+                  </div>
+                </div>
+
+                {/* Specific Process Selector */}
+                {docScope === 'specific' && (
+                  <div className="space-y-1.5 fade-in">
+                    <label className="block text-[10px] text-slate-400 font-bold">2. 대상 공정 선택</label>
+                    <select
+                      value={selectedSector}
+                      onChange={e => setSelectedSector(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none focus:border-cyan-500"
+                    >
+                      {PROCESS_DATA.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Page Range Inputs */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] text-slate-400 font-bold">
+                    {docScope === 'specific' ? '3.' : '2.'} 분석 페이지 범위 지정
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="1"
+                      max={totalPages}
+                      value={startPage}
+                      onChange={e => setStartPage(e.target.value)}
+                      className="w-20 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-center text-xs text-slate-200 outline-none focus:border-cyan-500"
+                    />
+                    <span className="text-slate-500">~</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max={totalPages}
+                      value={endPage}
+                      onChange={e => setEndPage(e.target.value)}
+                      className="w-20 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-center text-xs text-slate-200 outline-none focus:border-cyan-500"
+                    />
+                    <span className="text-[10px] text-slate-500">/ {totalPages}</span>
+                  </div>
+                </div>
+
+                {/* Smart Keyword Filter Checkbox */}
+                {docScope === 'specific' && (
+                  <div className="flex items-center gap-2 bg-slate-950/40 p-2 border border-slate-850 rounded-lg fade-in">
+                    <input
+                      type="checkbox"
+                      id="smartFilterCheck"
+                      checked={useSmartFilter}
+                      onChange={e => setUseSmartFilter(e.target.checked)}
+                      className="w-3.5 h-3.5 rounded bg-slate-950 border-slate-800 text-cyan-500 focus:ring-0 cursor-pointer"
+                    />
+                    <label htmlFor="smartFilterCheck" className="text-[9.5px] text-slate-400 font-bold cursor-pointer select-none leading-tight">
+                      공정 핵심 문단만 스마트 필터링 추출 <span className="text-cyan-400 font-black block mt-0.5">(토큰 최대 80% 세이빙)</span>
+                    </label>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex gap-2 pt-2 border-t border-slate-850 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => { setStep('select_file'); setPdfDoc(null); }}
+                    className="flex-1 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold transition-colors"
+                  >
+                    이전
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleExtractText}
+                    disabled={isPdfLoading}
+                    className="flex-[2] py-2 bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-800 text-white font-extrabold rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    {isPdfLoading ? (
+                      <>
+                        <i className="fa-solid fa-spinner fa-spin"></i>
+                        분석 및 추출 중...
+                      </>
+                    ) : (
+                      <>
+                        <i className="fa-solid fa-circle-play"></i>
+                        텍스트 분석 시작
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    // --- 4. MODALIZED LEADERBOARD COMPONENT ---
+    const RankingModal = ({ isOpen, onClose }) => {
+      const [allScores, setAllScores] = useState([]);
+      const [isLoading, setIsLoading] = useState(false);
+      const [activeFilter, setActiveFilter] = useState('all'); // all, choice, ox, short
+
+      useEffect(() => {
+        const fetchAllScores = async () => {
+          setIsLoading(true);
+          let localList = [];
+          const raw = localStorage.getItem('semiconductor_quiz_scores') || '[]';
+          try {
+            localList = JSON.parse(raw);
+          } catch(e) {}
+
+          try {
+            // Fetch ALL scores (up to 500 rows) order by score descending
+            const { data, error } = await supabase
+              .from('leaderboard')
+              .select('*')
+              .order('score', { ascending: false })
+              .limit(500);
+              
+            if (error) throw error;
+
+            if (data && data.length > 0) {
+              const mapped = data.map(item => ({
+                nickname: item.nickname,
+                score: item.score,
+                level: item.level,
+                quizType: item.quiz_type || 'all',
+                sector: item.sector || 'all',
+                timestamp: new Date(item.created_at).getTime()
+              }));
+              setAllScores(mapped);
+              setIsLoading(false);
+              return;
+            }
+          } catch(e) {
+            console.warn("Supabase leaderboard fetch failed, falling back to local storage:", e.message);
+          }
+
+          // Fallback to local storage
+          localList.sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            return b.timestamp - a.timestamp;
+          });
+          setAllScores(localList);
+          setIsLoading(false);
+        };
+
+        if (isOpen) {
+          fetchAllScores();
+        }
+      }, [isOpen]);
+
+      const handleClearScores = () => {
+        if (confirm("모든 로컬 랭킹 기록을 삭제하시겠습니까? (Supabase 서버 데이터는 삭제되지 않습니다)")) {
+          localStorage.removeItem('semiconductor_quiz_scores');
+          setAllScores([]);
+        }
+      };
+
+      const getSectorLabel = (sectorId) => {
+        if (sectorId === 'all') return '8대 공정 전체';
+        const matched = PROCESS_DATA.find(p => p.id === Number(sectorId));
+        return matched ? matched.name : sectorId;
+      };
+
+      const scores = activeFilter === 'all' 
+        ? allScores 
+        : allScores.filter(s => s.quizType === activeFilter);
+
+      if (!isOpen) return null;
+
+      return (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-xl max-h-[85vh] p-5 flex flex-col relative shadow-[0_0_50px_rgba(139,92,246,0.15)] fade-in">
+            <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-200">✕</button>
+            
+            <div className="flex justify-between items-center mb-3 shrink-0 pr-6">
+              <h3 className="text-sm font-bold text-slate-100 flex items-center gap-1.5">
+                <i className="fa-solid fa-trophy text-yellow-500"></i>
+                명예의 전당 (Leaderboard)
+              </h3>
+              {scores.length > 0 && (
+                <button
+                  onClick={handleClearScores}
+                  className="text-[9px] text-slate-500 hover:text-rose-400 font-bold border border-slate-800 px-1.5 py-0.5 rounded transition-colors"
+                >
+                  기록 비우기
+                </button>
+              )}
+            </div>
+
+            {/* Quiz Type Tabs */}
+            <div className="flex bg-slate-950 p-1 rounded-xl mb-3 shrink-0 gap-1 text-[10px] font-bold border border-slate-900">
+              {[
+                { val: 'all', label: '혼합형 전체' },
+                { val: 'choice', label: '객관식' },
+                { val: 'ox', label: 'OX 판별' },
+                { val: 'short', label: '주관식 단답' }
+              ].map(t => (
+                <button
+                  key={t.val}
+                  onClick={() => setActiveFilter(t.val)}
+                  className={`flex-1 py-1.5 rounded-lg text-center transition-all ${
+                    activeFilter === t.val 
+                      ? 'bg-violet-600/20 text-violet-400 border border-violet-500/30' 
+                      : 'text-slate-400 hover:text-slate-200 border border-transparent'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-0.5 min-h-0">
+              {isLoading ? (
+                <div className="h-44 flex flex-col items-center justify-center text-slate-500 text-xs gap-2">
+                  <i className="fa-solid fa-spinner fa-spin text-lg text-violet-400"></i>
+                  <span>랭킹 정보를 불러오는 중...</span>
+                </div>
+              ) : scores.length === 0 ? (
+                <div className="h-44 flex flex-col items-center justify-center text-[10px] text-slate-500 gap-1">
+                  <i className="fa-solid fa-ranking-star text-lg text-slate-700"></i>
+                  <span>기록된 스코어가 없습니다.</span>
+                </div>
+              ) : (
+                <table className="w-full text-left text-xs">
+                  <thead className="text-[9.5px] uppercase bg-slate-950 border-b border-slate-800 text-slate-400 sticky top-0">
+                    <tr>
+                      <th className="px-3 py-2">순위</th>
+                      <th className="px-3 py-2">닉네임</th>
+                      <th className="px-3 py-2">공정 범위 / 난이도</th>
+                      <th className="px-3 py-2">획득 점수</th>
+                      <th className="px-3 py-2 text-right">일자</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-900">
+                    {scores.map((s, idx) => (
+                      <tr key={idx} className="hover:bg-slate-900/30">
+                        <td className="px-3 py-3 font-extrabold">
+                          {idx === 0 ? (
+                            <span className="text-yellow-400"><i className="fa-solid fa-crown mr-1"></i>1등</span>
+                          ) : idx === 1 ? (
+                            <span className="text-slate-300">2등</span>
+                          ) : idx === 2 ? (
+                            <span className="text-amber-600">3등</span>
+                          ) : (
+                            `${idx + 1}위`
+                          )}
+                        </td>
+                        <td className="px-3 py-3 font-bold text-slate-200">{s.nickname}</td>
+                        <td className="px-3 py-3 text-slate-400 text-[10px] leading-tight">
+                          <div className="font-semibold">{getSectorLabel(s.sector)}</div>
+                          <div className="text-[8.5px] text-slate-500 mt-0.5">{s.level === 'hard' ? '어려움 (x3)' : s.level === 'medium' ? '보통 (x2)' : '쉬움 (x1)'}</div>
+                        </td>
+                        <td className="px-3 py-3 font-black text-yellow-400">{s.score}점</td>
+                        <td className="px-3 py-3 text-right text-slate-600 text-[9.5px]">
+                          {new Date(s.timestamp).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // --- 4.5 API KEY SETTINGS MODAL COMPONENT (DYNAMIC WRAPPER) ---
+    const ApiKeyModal = (props) => {
+      if (!window.ApiKeyModal) return null;
+      return <window.ApiKeyModal {...props} />;
+    };
+
+    // --- 5. ROADMAP TAB ---
+    const RoadmapTab = ({ onHoverWord, onLeaveWord }) => {
+      const [selectedProcess, setSelectedProcess] = useState(null);
+
+      return (
+        <div className="flex flex-col h-full fade-in">
+          {/* Header */}
+          <div className="shrink-0 mb-3 px-1">
+            <h2 className="text-lg font-extrabold tracking-tight text-slate-100 flex items-center gap-2">
+              <span className="w-2.5 h-4 bg-cyan-500 rounded-full"></span>
+              반도체 8대 공정 백서
+            </h2>
+            <p className="text-[11px] text-slate-400">반도체 8대 핵심 기술 이론 및 가이드북 제공</p>
+          </div>
+
+          {/* Timeline Cards Container */}
+          <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 pb-4 space-y-3">
+            {PROCESS_DATA.map((proc) => {
+              const isOpen = selectedProcess?.id === proc.id;
+              return (
+                <div 
+                  key={proc.id} 
+                  className={`transition-all duration-300 rounded-2xl border ${
+                    isOpen 
+                      ? 'bg-slate-900/95 border-cyan-500/80 shadow-[0_0_20px_rgba(6,182,212,0.15)]' 
+                      : 'bg-slate-900/40 border-slate-800/80 hover:border-slate-700/60'
+                  } p-4 cursor-pointer`}
+                  onClick={() => {
+                    const nextOpen = !isOpen;
+                    setSelectedProcess(nextOpen ? proc : null);
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center border ${
+                        isOpen ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400' : 'bg-slate-950/60 border-slate-800 text-slate-400'
+                      }`}>
+                        <i className={`fa-solid ${proc.icon} text-sm`}></i>
+                      </div>
+                      <div>
+                        <h3 className={`text-sm font-extrabold ${isOpen ? 'text-cyan-400' : 'text-slate-200'}`}>{proc.name}</h3>
+                        <span className="text-[9px] uppercase tracking-widest text-slate-500 font-bold">{proc.english}</span>
+                      </div>
+                    </div>
+                    <div className="text-slate-500 text-xs">
+                      <i className={`fa-solid ${isOpen ? 'fa-chevron-up' : 'fa-chevron-down'} transition-transform`}></i>
+                    </div>
+                  </div>
+
+                  {/* Expanded Detail Panel */}
+                  {isOpen && (
+                    <div className="mt-4 pt-3 border-t border-slate-800/80 text-xs space-y-3.5 fade-in" onClick={e => e.stopPropagation()}>
+                      <div className="text-slate-300 leading-relaxed text-[11.5px] whitespace-pre-wrap">
+                        <InteractiveText text={proc.desc} onHoverWord={onHoverWord} onLeaveWord={onLeaveWord} />
+                      </div>
+                      
+                      {/* Key concepts */}
+                      <div>
+                        <span className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">핵심 공정 기법</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {proc.keywords.map((word, idx) => (
+                            <span key={idx} className="px-2.5 py-1 rounded-md bg-slate-950/60 border border-slate-800 text-[10px] font-medium">
+                              <InteractiveText text={word} onHoverWord={onHoverWord} onLeaveWord={onLeaveWord} />
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Main troubles / Defects */}
+                      <div>
+                        <span className="block text-[9.5px] font-bold text-rose-400 uppercase tracking-wider mb-1.5">대표 불량 유형</span>
+                        <ul className="space-y-1 text-slate-400 text-[11px] list-disc list-inside">
+                          {proc.troubles.map((tr, idx) => (
+                            <li key={idx} className="hover:text-rose-300 transition-colors">
+                              <InteractiveText text={tr} onHoverWord={onHoverWord} onLeaveWord={onLeaveWord} />
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    };
+
+    // --- 6. GAMIFIED QUIZ TAB ---
+    const QuizTab = ({ onHoverWord, onLeaveWord, prefetchedQuiz, isPrefetching, onRegisterScore, onTriggerPrefetch, useAiQuiz, setUseAiQuiz, onOpenRanking, pdfText }) => {
+      const [step, setStep] = useState('setup');
+      const [configSector, setConfigSector] = useState('all');
+      const [configType, setConfigType] = useState('all');
+      const [configLevel, setConfigLevel] = useState('easy'); // easy, medium, hard
+      
+      const [questions, setQuestions] = useState([]);
+      const [currentIdx, setCurrentIdx] = useState(0);
+      const [userAnswers, setUserAnswers] = useState({});
+      const [shortInput, setShortInput] = useState('');
+      const [answersChecked, setAnswersChecked] = useState(false);
+      const [quizScore, setQuizScore] = useState(0);
+      
+      // Load cached nickname from LocalStorage
+      const [nickname, setNickname] = useState(() => localStorage.getItem('cached_nickname') || '');
+      const [isScoreSaved, setIsScoreSaved] = useState(false);
+
+      const [feedback, setFeedback] = useState({ show: false, isCorrect: false });
+      const [isLoadingFirstAiQuestion, setIsLoadingFirstAiQuestion] = useState(false);
+      const [isGeneratingRemaining, setIsGeneratingRemaining] = useState(false);
+      const [isWaitingForRemaining, setIsWaitingForRemaining] = useState(false);
+
+      const [speedBonuses, setSpeedBonuses] = useState({});
+      const questionStartTime = useRef(Date.now());
+
+      useEffect(() => {
+        if (step === 'play') {
+          questionStartTime.current = Date.now();
+        }
+      }, [currentIdx, step]);
+
+      // Check top 3 scores and trigger confetti fireworks!
+      useEffect(() => {
+        if (step === 'result' && quizScore > 0) {
+          const checkRankAndCelebrate = async () => {
+            let currentLeaderboard = [];
+            
+            // 1. Try to fetch from Supabase
+            try {
+              const { data, error } = await supabase
+                .from('leaderboard')
+                .select('score')
+                .order('score', { ascending: false })
+                .limit(3);
+              if (!error && data) {
+                currentLeaderboard = data;
+              }
+            } catch (e) {
+              console.warn("Supabase fetch for top 3 failed:", e);
+            }
+            
+            // 2. Fallback to LocalStorage
+            if (currentLeaderboard.length === 0) {
+              try {
+                const raw = localStorage.getItem('semiconductor_quiz_scores') || '[]';
+                const list = JSON.parse(raw);
+                list.sort((a, b) => b.score - a.score);
+                currentLeaderboard = list.slice(0, 3);
+              } catch (e) {}
+            }
+            
+            // 3. Determine if current score qualifies for Top 3
+            const isTop3 = currentLeaderboard.length < 3 || 
+                           quizScore >= currentLeaderboard[Math.min(2, currentLeaderboard.length - 1)].score;
+            
+            if (isTop3) {
+              // Fire confetti fireworks!
+              if (typeof confetti === 'function') {
+                const duration = 4 * 1000;
+                const animationEnd = Date.now() + duration;
+                const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
+                const randomInRange = (min, max) => Math.random() * (max - min) + min;
+
+                const interval = setInterval(function() {
+                  const timeLeft = animationEnd - Date.now();
+                  if (timeLeft <= 0) {
+                    return clearInterval(interval);
+                  }
+                  const particleCount = 50 * (timeLeft / duration);
+                  confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
+                  confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
+                }, 250);
+              }
+            }
+          };
+          
+          checkRankAndCelebrate();
+        }
+      }, [step, quizScore]);
+
+      const generateAiQuizOnStart = async () => {
+        setIsLoadingFirstAiQuestion(true);
+        setStep('play');
+        setQuestions([]);
+
+        let sectorLabel = "전체 8대 공정 종합";
+        if (configSector !== 'all') {
+          const matched = PROCESS_DATA.find(p => p.id === Number(configSector));
+          if (matched) sectorLabel = matched.name;
+        }
+
+        const typePrompt = configType === 'all' 
+          ? "mix of multiple-choice (choice type), OX (ox type), and short-answer (short type) questions"
+          : configType === 'choice'
+            ? "multiple-choice (choice type) only"
+            : configType === 'ox'
+              ? "OX (ox type) only"
+              : "short-answer (short type) only";
+
+        let contextSource = "반도체 공학 일반 지식";
+        if (pdfText) {
+          contextSource = `사용자가 제공한 PDF 교재 텍스트 컨텍스트:\n${pdfText}\n`;
+        }
+
+        const prompt1 = `반도체 공정 교육용 퀴즈를 딱 1문항만 생성해 주세요.
+
+[출제 조건]
+- 선택한 공정 종류: ${sectorLabel} (${configSector === 'all' ? '전체 8대 공정 통합' : '개별 공정'})
+- 문제 난이도: ${configLevel === 'hard' ? '상 (공정 트러블슈팅, 오류 추론, 파라미터 계산 등 깊이 있는 문제)' : configLevel === 'medium' ? '중 (작동 메커니즘, 장비 조건, 기법 비교 등 이해도 점검)' : '하 (용어 정의, 기본 개념 단순 암기)'}
+- 퀴즈 문제 종류: ${typePrompt}
+- 출제에 사용할 근거 데이터:
+${contextSource}
+
+[출력 형식 및 주의사항]
+- 반드시 아래의 단일 JSON 객체 형식만 한국어로 출력해 주세요. Markdown 코드 블록(예: \`\`\`json)은 포함해도 괜찮습니다.
+- 객관식(choice)의 options는 4개의 항목을 제공하고, answer는 정답 옵션의 인덱스("0", "1", "2", "3") 문자열이어야 합니다.
+- OX(ox)의 options는 ["O", "X"] 이고, answer는 "O" 또는 "X" 여야 합니다.
+- 주관식(short)의 options는 빈 배열 [] 이고, answer는 정확한 정답 단어여야 합니다.
+- explanation에는 오답 노트 작성을 위한 친절하고 상세한 한국어 해설을 기재해 주세요.
+
+JSON 형식 예시:
+{
+  "id": 1,
+  "procId": ${configSector === 'all' ? 1 : Number(configSector)},
+  "type": "${configType === 'all' ? 'choice' : configType}",
+  "question": "웨이퍼 제조 공정 중 실리콘 단결정 덩어리를 일컫는 용어는 무엇인가?",
+  "options": ["잉곳", "웨이퍼", "슬라이스", "도너"],
+  "answer": "0",
+  "explanation": "고순도로 정제된 실리콘 용융액으로부터 성장시킨 단결정 실리콘 원기둥 덩어리를 잉곳(Ingot)이라고 부릅니다."
+}`;
+
+        try {
+          const rawText = await getGeminiResponse(prompt1);
+          let raw = rawText.trim();
+          const jsonMatch = raw.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            raw = jsonMatch[0];
+          }
+          const q1 = JSON.parse(raw);
+          const preparedQ1 = prepareQuestions([q1])[0];
+          
+          setQuestions([preparedQ1]);
+          setIsLoadingFirstAiQuestion(false);
+
+          // Trigger background loading of the remaining 4 questions
+          generateRemainingAiQuestions(sectorLabel, typePrompt, contextSource);
+        } catch(err) {
+          console.warn("AI 1st question generation failed, falling back to local database.", err);
+          fallbackToLocalQuiz();
+        }
+      };
+
+      const generateRemainingAiQuestions = async (sectorLabel, typePrompt, contextSource) => {
+        setIsGeneratingRemaining(true);
+        const promptRemaining = `반도체 공정 교육용 퀴즈를 추가로 4문항 생성해 주세요.
+
+[출제 조건]
+- 선택한 공정 종류: ${sectorLabel} (${configSector === 'all' ? '전체 8대 공정 통합' : '개별 공정'})
+- 문제 난이도: ${configLevel === 'hard' ? '상 (공정 트러블슈팅, 오류 추론, 파라미터 계산 등 깊이 있는 문제)' : configLevel === 'medium' ? '중 (작동 메커니즘, 장비 조건, 기법 비교 등 이해도 점검)' : '하 (용어 정의, 기본 개념 단순 암기)'}
+- 퀴즈 문제 종류: ${typePrompt}
+- 출제에 사용할 근거 데이터:
+${contextSource}
+
+[출력 형식 및 주의사항]
+- 반드시 아래의 JSON 배열 형식으로 정확하게 4개의 추가 문제를 한국어로 생성해 주세요.
+- 객관식(choice)의 options는 4개의 항목을 제공하고, answer는 정답 옵션의 인덱스("0", "1", "2", "3") 문자열이어야 합니다.
+- OX(ox)의 options는 ["O", "X"] 이고, answer는 "O" 또는 "X" 여야 합니다.
+- 주관식(short)의 options는 [] 이고, answer는 정확한 정답 단어여야 합니다.
+- explanation에는 오답 노트 작성을 위한 친절하고 상세한 한국어 해설을 기재해 주세요.
+
+JSON 배열 구조 예시:
+[
+  {
+    "id": 2,
+    "procId": ${configSector === 'all' ? 1 : Number(configSector)},
+    "type": "${configType === 'all' ? 'ox' : configType}",
+    "question": "산화 공정에서 건식 산화는 습식 산화보다 산화막 성장 속도가 빠르다.",
+    "options": ["O", "X"],
+    "answer": "X",
+    "explanation": "건식 산화는 산소 가스만을 사용하여 속도가 느리며, 습식 산화는 수증기를 이용해 5~10배 가량 빠릅니다."
+  }
+]`;
+
+        try {
+          const rawText = await getGeminiResponse(promptRemaining);
+          let raw = rawText.trim();
+          const jsonMatch = raw.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            raw = jsonMatch[0];
+          }
+          const parsed = JSON.parse(raw);
+          const preparedRemaining = prepareQuestions(parsed);
+          
+          setQuestions(prev => {
+            if (prev.length > 0) {
+              return [prev[0], ...preparedRemaining];
+            }
+            return preparedRemaining;
+          });
+        } catch (err) {
+          console.warn("Background remaining questions fetch failed.", err);
+          const localSource = window.LOCAL_QUIZ_CONFIG || [];
+          let matches = localSource.filter(q => 
+            (configSector === 'all' || q.procId === Number(configSector)) &&
+            (q.level === configLevel)
+          );
+          if (matches.length < 4) {
+            matches = localSource.filter(q => 
+              (configSector === 'all' || q.procId === Number(configSector))
+            );
+          }
+          const selected = shuffleArray(matches).slice(0, 4);
+          const adapted = selected.map(q => adaptQuestionToType(q, configType, localSource));
+          const prepared = prepareQuestions(adapted);
+          setQuestions(prev => {
+            if (prev.length > 0) {
+              return [prev[0], ...prepared];
+            }
+            return prepared;
+          });
+        } finally {
+          setIsGeneratingRemaining(false);
+        }
+      };
+
+      const fallbackToLocalQuiz = () => {
+        setIsLoadingFirstAiQuestion(false);
+        setIsGeneratingRemaining(false);
+        
+        const localSource = window.LOCAL_QUIZ_CONFIG || [];
+        let selectedSet = [];
+
+        if (configType === 'all') {
+          let matches = localSource.filter(q => 
+            (configSector === 'all' || q.procId === Number(configSector)) &&
+            (q.level === configLevel)
+          );
+          if (matches.length < 5) {
+            matches = localSource.filter(q => 
+              (configSector === 'all' || q.procId === Number(configSector))
+            );
+          }
+          if (matches.length === 0) {
+            matches = [...localSource];
+          }
+          selectedSet = shuffleArray(matches).slice(0, 5);
+        } else {
+          let matches = localSource.filter(q => 
+            (configSector === 'all' || q.procId === Number(configSector)) &&
+            (q.level === configLevel)
+          );
+          if (matches.length < 5) {
+            matches = localSource.filter(q => 
+              (configSector === 'all' || q.procId === Number(configSector))
+            );
+          }
+          if (matches.length === 0) {
+            matches = [...localSource];
+          }
+          const sliced = shuffleArray(matches).slice(0, 5);
+          selectedSet = sliced.map(q => adaptQuestionToType(q, configType, localSource));
+        }
+
+        setQuestions(prepareQuestions(selectedSet));
+        setStep('play');
+      };
+
+      const handleStartQuiz = () => {
+        setAnswersChecked(false);
+        setUserAnswers({});
+        setCurrentIdx(0);
+        setShortInput('');
+        setIsScoreSaved(false);
+        setSpeedBonuses({});
+
+        if (useAiQuiz) {
+          generateAiQuizOnStart();
+        } else {
+          fallbackToLocalQuiz();
+        }
+      };
+
+      const handleAnswerSelect = (optIdx) => {
+        if (answersChecked) return;
+        setUserAnswers(prev => ({ ...prev, [currentIdx]: String(optIdx) }));
+        const elapsed = Date.now() - questionStartTime.current;
+        setSpeedBonuses(prev => ({ ...prev, [currentIdx]: elapsed <= 3000 }));
+      };
+
+      const handleOxSelect = (answerStr) => {
+        if (answersChecked) return;
+        setUserAnswers(prev => ({ ...prev, [currentIdx]: answerStr }));
+        const elapsed = Date.now() - questionStartTime.current;
+        setSpeedBonuses(prev => ({ ...prev, [currentIdx]: elapsed <= 3000 }));
+      };
+
+      const handleShortSubmit = (e) => {
+        if (e) e.preventDefault();
+        if (answersChecked) return;
+        setUserAnswers(prev => ({ ...prev, [currentIdx]: shortInput }));
+        const elapsed = Date.now() - questionStartTime.current;
+        setSpeedBonuses(prev => ({ ...prev, [currentIdx]: elapsed <= 3000 }));
+      };
+
+      const handleNextQuestion = () => {
+        setShortInput('');
+        if (currentIdx < questions.length - 1) {
+          setCurrentIdx(prev => prev + 1);
+        } else {
+          // Calculate score based on difficulty multipliers
+          let score = 0;
+          questions.forEach((q, idx) => {
+            const userAns = (userAnswers[idx] || '').trim().toLowerCase().replace(/\s+/g, '');
+            const targetAns = q.answer.trim().toLowerCase().replace(/\s+/g, '');
+            // Forgiving grading: exact match, or substring inclusion if type is short (min 2 chars)
+            const isMatch = userAns === targetAns || 
+              (q.type === 'short' && (
+                (targetAns.length >= 2 && userAns.includes(targetAns)) ||
+                (userAns.length >= 2 && targetAns.includes(userAns))
+              ));
+            if (isMatch) {
+              const basePoint = configLevel === 'hard' ? 30 : configLevel === 'medium' ? 20 : 10;
+              let itemScore = basePoint;
+              if (speedBonuses[idx]) {
+                itemScore = Math.round(basePoint * 1.2);
+              }
+              score += itemScore;
+            }
+          });
+          
+          setQuizScore(score);
+          setStep('result');
+        }
+      };
+
+      const triggerFeedbackAndNext = () => {
+        if (!currentQuestion) return;
+        const userAns = (userAnswers[currentIdx] || '').trim().toLowerCase().replace(/\s+/g, '');
+        const targetAns = currentQuestion.answer.trim().toLowerCase().replace(/\s+/g, '');
+        
+        const isMatch = userAns === targetAns || 
+          (currentQuestion.type === 'short' && (
+            (targetAns.length >= 2 && userAns.includes(targetAns)) ||
+            (userAns.length >= 2 && targetAns.includes(userAns))
+          ));
+
+        setFeedback({ show: true, isCorrect: isMatch });
+      };
+
+      const confirmFeedbackAndProceed = () => {
+        setFeedback({ show: false, isCorrect: false });
+        
+        // If the user clicks next, but remaining AI questions are still loading in background
+        if (currentIdx === questions.length - 1 && questions.length < 5 && isGeneratingRemaining) {
+          setIsWaitingForRemaining(true);
+          const pollForRemaining = () => {
+            setQuestions(latestQuestions => {
+              if (latestQuestions.length > currentIdx + 1) {
+                setIsWaitingForRemaining(false);
+                setCurrentIdx(prev => prev + 1);
+                setShortInput('');
+                return latestQuestions;
+              } else {
+                setTimeout(pollForRemaining, 500);
+                return latestQuestions;
+              }
+            });
+          };
+          pollForRemaining();
+        } else {
+          handleNextQuestion();
+        }
+      };
+
+      const handleSaveScore = () => {
+        if (!nickname.trim()) return alert("닉네임을 입력하세요.");
+        
+        // Cache nickname to localstorage
+        localStorage.setItem('cached_nickname', nickname.trim());
+        
+        onRegisterScore(nickname.trim(), quizScore, configLevel, configType, configSector);
+        setIsScoreSaved(true);
+        onOpenRanking(); // Automatically open ranking modal
+        setStep('setup');
+      };
+
+      const currentQuestion = questions[currentIdx];
+      const levelMultiplier = configLevel === 'hard' ? 3 : configLevel === 'medium' ? 2 : 1;
+
+      return (
+        <div className="flex flex-col h-full fade-in">
+          {/* SETUP SCREEN */}
+          {step === 'setup' && (
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 pb-4 space-y-4">
+              <div className="shrink-0 mb-2 px-1 flex justify-between items-center">
+                <div>
+                  <h2 className="text-lg font-extrabold tracking-tight text-slate-100 flex items-center gap-2">
+                    <span className="w-2.5 h-4 bg-violet-500 rounded-full"></span>
+                    핵심 퀴즈 스테이션
+                  </h2>
+                  <p className="text-[11px] text-slate-400">다양한 문제 유형 및 퀴즈 출처 조율</p>
+                </div>
+                <button
+                  onClick={onOpenRanking}
+                  className="px-2.5 py-1.5 bg-slate-900 border border-slate-800 hover:border-yellow-500/50 hover:text-yellow-400 rounded-xl transition-all text-[10px] font-bold flex items-center gap-1.5 shrink-0"
+                >
+                  <i className="fa-solid fa-trophy text-yellow-500"></i>
+                  랭킹 보기
+                </button>
+              </div>
+
+              {/* Quiz Source Card */}
+              <div className="bg-slate-900/60 p-4 border border-slate-800/80 rounded-2xl space-y-4">
+                <h3 className="text-xs font-bold text-slate-200">1. 퀴즈 소스 선택</h3>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <button
+                    onClick={() => setUseAiQuiz(false)}
+                    className={`p-3 rounded-xl border font-bold text-center transition-all ${
+                      !useAiQuiz 
+                        ? 'bg-violet-600/15 border-violet-500 text-violet-400' 
+                        : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-800'
+                    }`}
+                  >
+                    <i className="fa-solid fa-book-open text-base mb-1.5 block"></i>
+                    내장 공정 백서
+                  </button>
+                  <button
+                    onClick={() => setUseAiQuiz(true)}
+                    className={`p-3 rounded-xl border font-bold text-center transition-all relative ${
+                      useAiQuiz 
+                        ? 'bg-violet-600/15 border-violet-500 text-violet-400' 
+                        : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-800'
+                    }`}
+                  >
+                    {isPrefetching && (
+                      <span className="absolute top-1 right-2 flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+                      </span>
+                    )}
+                    <i className="fa-solid fa-wand-magic-sparkles text-base mb-1.5 block"></i>
+                    AI 맞춤형 (교재 연동)
+                  </button>
+                </div>
+                {useAiQuiz && (
+                  <p className="text-[9.5px] text-slate-400 leading-normal bg-slate-950/60 p-2 rounded-lg border border-slate-800/60">
+                    💡 **AI 맞춤형**: 업로드된 PDF가 있을 경우 해당 교재를 근거로, 없을 경우 일반 반도체 지식을 바탕으로 AI가 문제를 실시간 준비합니다.
+                    {isPrefetching ? (
+                      <span className="text-cyan-400 font-bold block mt-1">
+                        <i className="fa-solid fa-spinner fa-spin mr-1"></i>
+                        백그라운드에서 AI 문제를 실시간 생성 중...
+                      </span>
+                    ) : (
+                      <span className="text-emerald-400 font-bold block mt-1">
+                        ✓ AI 문제 동기화 완료! 즉시 시작 가능합니다.
+                      </span>
+                    )}
+                  </p>
+                )}
+              </div>
+
+              {/* Filters & Difficulty Selector */}
+              <div className="bg-slate-900/60 p-4 border border-slate-800/80 rounded-2xl space-y-4">
+                <h3 className="text-xs font-bold text-slate-200">2. 공정 범위 및 유형 조율</h3>
+                
+                <div className="space-y-4">
+                  {/* Category Sector */}
+                  <div>
+                    <label className="block text-[10px] text-slate-400 font-extrabold uppercase tracking-wide mb-1.5">출제 섹터</label>
+                    <select
+                      value={configSector}
+                      onChange={e => setConfigSector(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-violet-500"
+                    >
+                      <option value="all">8대 공정 전체 통합</option>
+                      {PROCESS_DATA.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Question Type */}
+                  <div>
+                    <label className="block text-[10px] text-slate-400 font-extrabold uppercase tracking-wide mb-1.5">문제 유형</label>
+                    <select
+                      value={configType}
+                      disabled={useAiQuiz}
+                      onChange={e => setConfigType(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-violet-500 disabled:opacity-50"
+                    >
+                      <option value="all">객관식 / OX / 주관식 혼합</option>
+                      <option value="choice">객관식 (4지선다형)</option>
+                      <option value="ox">OX 진위 판별형</option>
+                      <option value="short">주관식 단답형</option>
+                    </select>
+                  </div>
+
+                  {/* Difficulty Selection with multipliers */}
+                  <div>
+                    <label className="block text-[10px] text-slate-400 font-extrabold uppercase tracking-wide mb-1.5">배점 난이도</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { val: 'easy', label: '쉬움 (x1)', desc: '기본 암기' },
+                        { val: 'medium', label: '보통 (x2)', desc: '원리 이해' },
+                        { val: 'hard', label: '어려움 (x3)', desc: '공정 트러블슈팅' }
+                      ].map(lvl => (
+                        <button
+                          key={lvl.val}
+                          type="button"
+                          onClick={() => setConfigLevel(lvl.val)}
+                          className={`py-2 px-1 rounded-xl border flex flex-col items-center justify-center transition-all ${
+                            configLevel === lvl.val
+                              ? 'bg-violet-600/15 border-violet-500 text-violet-400 font-bold'
+                              : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-800'
+                          }`}
+                        >
+                          <span className="text-[10px]">{lvl.label}</span>
+                          <span className="text-[8px] text-slate-500 font-normal mt-0.5">{lvl.desc}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={handleStartQuiz}
+                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-extrabold text-xs tracking-wider transition-all shadow-lg active-tab-glow"
+              >
+                퀴즈 챌린지 시작
+              </button>
+            </div>
+          )}
+
+          {/* PLAY SCREEN */}
+          {step === 'play' && (
+            <div className="flex-1 flex flex-col justify-between min-h-0 fade-in relative">
+              {isLoadingFirstAiQuestion ? (
+                <div className="flex-1 flex flex-col items-center justify-center p-6 space-y-4">
+                  <i className="fa-solid fa-wand-magic-sparkles text-3xl text-violet-400 animate-pulse"></i>
+                  <span className="text-xs text-slate-300 font-bold text-center">첫 번째 AI 맞춤형 문제를 생성하고 있습니다...</span>
+                  <div className="w-24 h-1 bg-slate-950 rounded-full overflow-hidden">
+                    <div className="h-full bg-violet-500 animate-[pulse_1.5s_infinite] w-full"></div>
+                  </div>
+                </div>
+              ) : currentQuestion ? (
+                <>
+                  <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 pb-4">
+                    <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold mb-3">
+                      <span>출처: {useAiQuiz ? 'AI 실시간' : '백서 데이터'} | 배점 가중치: x{levelMultiplier}</span>
+                      <span>{currentIdx + 1} / 5 문항</span>
+                    </div>
+
+                    <div className="w-full h-1 bg-slate-950 rounded-full overflow-hidden mb-5">
+                      <div 
+                        className="h-full bg-violet-500 transition-all duration-300"
+                        style={{ width: `${((currentIdx + 1) / 5) * 100}%` }}
+                      ></div>
+                    </div>
+
+                    <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 space-y-4">
+                      <div className="flex justify-between items-center">
+                        <span className="inline-block px-2.5 py-0.5 rounded-md text-[9px] font-extrabold uppercase bg-slate-950 border border-slate-800 text-violet-400">
+                          {currentQuestion.type === 'ox' ? 'OX 판별' : currentQuestion.type === 'choice' ? '객관식' : '주관식 단답'}
+                        </span>
+                        <span className="text-[9px] text-slate-500 font-bold">문항당 {levelMultiplier * 10}점</span>
+                      </div>
+                      
+                      <h3 className="text-xs font-bold leading-relaxed text-slate-200">
+                        <InteractiveText text={currentQuestion.question} onHoverWord={onHoverWord} onLeaveWord={onLeaveWord} />
+                      </h3>
+
+                      {/* A. CHOICE TYPE */}
+                      {currentQuestion.type === 'choice' && (
+                        <div className="grid grid-cols-1 gap-2 pt-2">
+                          {currentQuestion.options.map((opt, oIdx) => {
+                            const isSelected = userAnswers[currentIdx] === String(oIdx);
+                            return (
+                              <button
+                                key={oIdx}
+                                onClick={() => handleAnswerSelect(oIdx)}
+                                className={`w-full text-left text-[11px] px-3.5 py-2.5 rounded-xl border transition-all ${
+                                  isSelected 
+                                    ? 'bg-violet-600/15 border-violet-500 text-violet-400 font-bold' 
+                                    : 'bg-slate-950/60 border-slate-800 text-slate-300 hover:border-slate-800'
+                                }`}
+                              >
+                                {opt}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* B. OX TYPE */}
+                      {currentQuestion.type === 'ox' && (
+                        <div className="grid grid-cols-2 gap-4 pt-3">
+                          {["O", "X"].map((oxVal) => {
+                            const isSelected = userAnswers[currentIdx] === oxVal;
+                            return (
+                              <button
+                                key={oxVal}
+                                onClick={() => handleOxSelect(oxVal)}
+                                className={`py-6 text-2xl font-black rounded-xl border transition-all text-center ${
+                                  isSelected 
+                                    ? 'bg-violet-600/15 border-violet-500 text-violet-400' 
+                                    : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-800'
+                                }`}
+                              >
+                                {oxVal}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* C. SHORT ANSWER TYPE */}
+                      {currentQuestion.type === 'short' && (
+                        <form onSubmit={handleShortSubmit} className="pt-2 space-y-3">
+                          <input
+                            type="text"
+                            placeholder="정답 단어를 입력하세요 (예: CMP, 마스크)"
+                            value={shortInput}
+                            onChange={e => setShortInput(e.target.value)}
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-3 text-xs text-slate-100 outline-none focus:border-violet-500"
+                          />
+                          <button
+                            type="submit"
+                            className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold rounded-lg transition-colors"
+                          >
+                            입력 정답 확정
+                          </button>
+                          {userAnswers[currentIdx] && (
+                            <div className="text-[10px] text-emerald-400 font-semibold px-1">
+                              ✓ 확정된 입력값: "{userAnswers[currentIdx]}"
+                            </div>
+                          )}
+                        </form>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="shrink-0 pt-2 border-t border-slate-900">
+                    <button
+                      onClick={triggerFeedbackAndNext}
+                      disabled={!userAnswers[currentIdx] || feedback.show || isWaitingForRemaining}
+                      className="w-full py-3.5 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:bg-slate-900 disabled:text-slate-600 text-white font-extrabold text-xs transition-colors"
+                    >
+                      {currentIdx === 4 ? '채점 및 결과보기' : '다음 문항'}
+                    </button>
+                  </div>
+
+                  {/* 3D Wafer Feedback Overlay */}
+                  {feedback.show && (
+                    <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-30 flex flex-col items-center p-4 overflow-y-auto custom-scrollbar space-y-4 rounded-2xl fade-in justify-between">
+                      <div className="w-full flex-1 flex flex-col items-center justify-center space-y-4 min-h-0">
+                        <div className="wafer-3d-container scale-[0.65] -my-4 shrink-0">
+                          <div className="wafer-3d">
+                            <div className="wafer-grid"></div>
+                            <div className="wafer-notch"></div>
+                            <div className="wafer-reflection"></div>
+                          </div>
+                        </div>
+                        
+                        <div className={`px-4 py-2 rounded-xl text-xs font-black border tracking-wider shadow-lg shrink-0 ${
+                          feedback.isCorrect 
+                            ? 'bg-emerald-950/90 text-emerald-400 border-emerald-500/40 shadow-emerald-500/20 animate-feedback-correct' 
+                            : 'bg-rose-950/90 text-rose-400 border-rose-500/40 shadow-rose-500/20 animate-feedback-incorrect'
+                        }`}>
+                          {feedback.isCorrect ? (
+                            <span className="flex flex-col items-center gap-1">
+                              <span className="flex items-center gap-1.5">
+                                <i className="fa-solid fa-circle-check text-sm text-emerald-400"></i>
+                                정답입니다! (+{speedBonuses[currentIdx] ? Math.round(levelMultiplier * 10 * 1.2) : levelMultiplier * 10}점)
+                              </span>
+                              {speedBonuses[currentIdx] && (
+                                <span className="text-[10px] text-yellow-400 font-extrabold flex items-center gap-1 mt-0.5 animate-pulse">
+                                  <i className="fa-solid fa-bolt text-yellow-400"></i>
+                                  ⚡ 3초 퀵 보너스 적용! (+20%)
+                                </span>
+                              )}
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1.5 flex-col items-center text-center">
+                              <span className="flex items-center gap-1.5">
+                                <i className="fa-solid fa-circle-xmark text-sm text-rose-400"></i>
+                                오답입니다!
+                              </span>
+                              <span className="text-[10px] text-rose-300 font-semibold mt-1">
+                                정답: {currentQuestion.type === 'choice' ? currentQuestion.options[Number(currentQuestion.answer)] : currentQuestion.answer}
+                              </span>
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Detailed Explanation Study Card */}
+                        <div className="w-full bg-slate-900/90 border border-slate-800/80 rounded-xl p-3 text-[11px] leading-relaxed text-slate-300 max-h-48 overflow-y-auto custom-scrollbar select-text">
+                          <div className="font-extrabold text-cyan-400 mb-1 flex items-center gap-1 shrink-0">
+                            <i className="fa-solid fa-book-open text-[10px]"></i>
+                            핵심 해설 학습
+                          </div>
+                          <InteractiveText text={currentQuestion.explanation} onHoverWord={onHoverWord} onLeaveWord={onLeaveWord} />
+                        </div>
+                      </div>
+
+                      <div className="w-full shrink-0 pt-2 border-t border-slate-900/80">
+                        <button
+                          onClick={confirmFeedbackAndProceed}
+                          className="w-full py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-extrabold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-lg active-tab-glow"
+                        >
+                          공부 완료 & 다음 문항
+                          <i className="fa-solid fa-chevron-right text-[10px]"></i>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Real-time background loading wait indicator */}
+                  {isWaitingForRemaining && (
+                    <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm z-30 flex flex-col items-center justify-center space-y-4 rounded-2xl fade-in">
+                      <i className="fa-solid fa-spinner fa-spin text-2xl text-cyan-400"></i>
+                      <span className="text-xs text-slate-300 font-bold text-center">다음 AI 문제를 실시간으로 받아오고 있습니다...</span>
+                    </div>
+                  )}
+                </>
+              ) : null}
+            </div>
+          )}
+
+          {/* RESULT SCREEN */}
+          {step === 'result' && (
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 pb-4 space-y-5 fade-in">
+              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 text-center space-y-3">
+                <div className="w-16 h-16 mx-auto rounded-full bg-violet-500/10 flex items-center justify-center border border-violet-500/30">
+                  <i className="fa-solid fa-trophy text-2xl text-violet-400"></i>
+                </div>
+                <div className="text-xs text-slate-400 font-bold uppercase tracking-widest">종합 스코어</div>
+                <div className="text-3xl font-black text-slate-100">{quizScore}점</div>
+                <p className="text-[10px] text-slate-500 leading-relaxed">
+                  난이도 <strong>{configLevel === 'hard' ? '어려움 (30점x5)' : configLevel === 'medium' ? '보통 (20점x5)' : '쉬움 (10점x5)'}</strong> 설정이 적용되었습니다.
+                </p>
+              </div>
+
+              {/* Save Score Card */}
+              {!isScoreSaved ? (
+                <div className="bg-slate-900/60 p-4 border border-slate-800/80 rounded-2xl space-y-3">
+                  <h3 className="text-xs font-bold text-slate-200">명예의 전당 등록</h3>
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      placeholder="닉네임 입력 (예: 반도체천재)"
+                      value={nickname}
+                      onChange={e => setNickname(e.target.value)}
+                      className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 outline-none focus:border-violet-500"
+                    />
+                    <button
+                      onClick={handleSaveScore}
+                      className="bg-violet-600 hover:bg-violet-500 text-white font-bold px-4 py-2 rounded-xl text-xs transition-colors"
+                    >
+                      등록 및 확인
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-emerald-950/20 border border-emerald-800/40 text-emerald-400 p-3 rounded-xl text-xs font-bold text-center">
+                  ✓ 점수가 명예의 전당에 등재되었습니다.
+                </div>
+              )}
+
+              {/* Wrong Questions review list */}
+              <div className="space-y-3">
+                <h3 className="text-xs font-bold text-slate-200 px-1">오답 정리 노트 및 해설</h3>
+                {questions.map((q, idx) => {
+                  const userAns = (userAnswers[idx] || '').trim().toLowerCase().replace(/\s+/g, '');
+                  const targetAns = q.answer.trim().toLowerCase().replace(/\s+/g, '');
+                  const isCorrect = userAns === targetAns;
+
+                  return (
+                    <div key={q.id || idx} className={`p-4 rounded-xl border ${isCorrect ? 'bg-slate-900/10 border-slate-800/50' : 'bg-rose-950/10 border-rose-800/30'}`}>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-[9.5px] font-bold text-slate-500">문항 {idx + 1}</span>
+                        <span className={`text-[9.5px] font-extrabold ${isCorrect ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          {isCorrect ? '정답' : '오답'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-300 font-semibold mb-2">{q.question}</p>
+                      <div className="text-[10px] text-slate-400 leading-normal space-y-1">
+                        <div>내 제출: <span className={isCorrect ? 'text-emerald-400' : 'text-rose-400'}>{userAnswers[idx] || '(미입력)'}</span></div>
+                        <div>올바른 답: <span className="text-emerald-400">{q.answer}</span></div>
+                        <div className="mt-2 text-slate-500 border-t border-slate-800/60 pt-1">
+                          <InteractiveText text={q.explanation} onHoverWord={onHoverWord} onLeaveWord={onLeaveWord} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => setStep('setup')}
+                className="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors"
+              >
+                메인 세팅 화면으로 이동
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // --- 7. SUPABASE COMMUNITY FORUM TAB COMPONENT ---
+    const CommunityTab = () => {
+      const [posts, setPosts] = useState([]);
+      const [isLoading, setIsLoading] = useState(false);
+      const [isWriting, setIsWriting] = useState(false);
+
+      // Cache nickname loader
+      const [nickname, setNickname] = useState(() => localStorage.getItem('cached_nickname') || '');
+      const [password, setPassword] = useState('');
+      const [title, setTitle] = useState('');
+      const [content, setContent] = useState('');
+
+      const fetchPosts = async () => {
+        setIsLoading(true);
+        try {
+          const { data, error } = await supabase
+            .from('posts')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+          if (error) throw error;
+          setPosts(data || []);
+        } catch(e) {
+          console.error("Supabase 로드 오류:", e.message);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      useEffect(() => {
+        fetchPosts();
+      }, []);
+
+      const handleAddPost = async (e) => {
+        e.preventDefault();
+        if (!nickname.trim() || !password.trim() || !title.trim() || !content.trim()) {
+          return alert("모든 항목을 입력해 주세요.");
+        }
+
+        try {
+          const { error } = await supabase
+            .from('posts')
+            .insert([{ nickname: nickname.trim(), password: password.trim(), title, content }]);
+
+          if (error) throw error;
+
+          // Cache nickname to localstorage
+          localStorage.setItem('cached_nickname', nickname.trim());
+
+          setPassword('');
+          setTitle('');
+          setContent('');
+          setIsWriting(false);
+          fetchPosts();
+          alert("게시글이 성공적으로 등록되었습니다!");
+        } catch(e) {
+          alert(`등록 실패: ${e.message}`);
+        }
+      };
+
+      const handleDeletePost = async (postId, postPassword) => {
+        const inputPassword = prompt("게시글 삭제 비밀번호를 입력하세요:");
+        if (inputPassword === null) return;
+
+        if (inputPassword.trim() !== postPassword.trim()) {
+          return alert("비밀번호가 일치하지 않습니다.");
+        }
+
+        try {
+          const { error } = await supabase
+            .from('posts')
+            .delete()
+            .eq('id', postId)
+            .eq('password', inputPassword.trim());
+
+          if (error) throw error;
+          fetchPosts();
+          alert("게시글이 삭제되었습니다.");
+        } catch(e) {
+          alert(`삭제 오류: ${e.message}`);
+        }
+      };
+
+      return (
+        <div className="flex flex-col h-full fade-in">
+          {/* Header */}
+          <div className="shrink-0 mb-3 px-1 flex justify-between items-center">
+            <div>
+              <h2 className="text-lg font-extrabold tracking-tight text-slate-100 flex items-center gap-2">
+                <i className="fa-solid fa-clipboard-list text-emerald-400"></i>
+                자유게시판
+              </h2>
+              <p className="text-[11px] text-slate-400">학습 질문 및 자유로운 반도체 관련 토론 공간</p>
+            </div>
+            
+            <button
+              onClick={() => setIsWriting(!isWriting)}
+              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-xl transition-all text-xs font-bold flex items-center gap-1 shrink-0"
+            >
+              <i className={`fa-solid ${isWriting ? 'fa-list' : 'fa-pen'}`}></i>
+              {isWriting ? '목록 보기' : '새 글 작성'}
+            </button>
+          </div>
+
+          <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-0.5">
+            {isWriting ? (
+              <form onSubmit={handleAddPost} className="bg-slate-900/60 p-4 border border-slate-800/80 rounded-2xl space-y-4 fade-in">
+                <div>
+                  <h3 className="text-xs font-bold text-slate-200">새 게시물 등록</h3>
+                  <p className="text-[10px] text-slate-400 mt-1">💡 별도의 회원가입/로그인 없이, 닉네임과 임의의 삭제용 비밀번호 설정만으로 간편하게 게시글을 작성하실 수 있습니다.</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <label className="block text-[10px] text-slate-500 font-bold mb-1">작성자 닉네임</label>
+                    <input 
+                      type="text" 
+                      placeholder="닉네임"
+                      value={nickname}
+                      onChange={e => setNickname(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-slate-500 font-bold mb-1">삭제용 비밀번호</label>
+                    <input 
+                      type="password" 
+                      placeholder="비밀번호"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="text-xs">
+                  <label className="block text-[10px] text-slate-500 font-bold mb-1">글 제목</label>
+                  <input 
+                    type="text" 
+                    placeholder="제목을 입력하세요"
+                    value={title}
+                    onChange={e => setTitle(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 outline-none focus:border-emerald-500"
+                  />
+                </div>
+
+                <div className="text-xs">
+                  <label className="block text-[10px] text-slate-500 font-bold mb-1">본문 내용</label>
+                  <textarea 
+                    rows="5"
+                    placeholder="내용을 작성하세요..."
+                    value={content}
+                    onChange={e => setContent(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-100 outline-none focus:border-emerald-500 custom-scrollbar resize-none"
+                  ></textarea>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs transition-colors"
+                >
+                  게시판 등록 완료
+                </button>
+              </form>
+            ) : (
+              <div className="space-y-3 pb-4">
+                {isLoading ? (
+                  <div className="h-44 flex flex-col items-center justify-center text-slate-500 text-xs gap-2">
+                    <i className="fa-solid fa-spinner fa-spin text-lg text-emerald-400"></i>
+                    <span>게시물을 동기화하는 중...</span>
+                  </div>
+                ) : posts.length === 0 ? (
+                  <div className="h-44 flex flex-col items-center justify-center text-slate-500 text-xs border border-dashed border-slate-800 rounded-2xl bg-slate-900/10 p-4 text-center">
+                    <i className="fa-solid fa-clipboard-list text-2xl mb-2 text-slate-700"></i>
+                    <span>자유게시판에 등록된 글이 없습니다.</span>
+                  </div>
+                ) : (
+                  posts.map(post => (
+                    <div key={post.id} className="bg-slate-900/30 border border-slate-800/60 rounded-2xl p-4 space-y-2 relative group hover:border-slate-700 transition-colors">
+                      <button
+                        onClick={() => handleDeletePost(post.id, post.password)}
+                        className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 text-slate-500 hover:text-rose-400 transition-opacity text-xs"
+                        title="게시글 삭제"
+                      >
+                        <i className="fa-solid fa-trash-can"></i>
+                      </button>
+
+                      <h3 className="text-xs font-bold text-slate-200 pr-8">{post.title}</h3>
+                      <p className="text-[11px] text-slate-400 leading-relaxed white-space-pre-wrap">{post.content}</p>
+                      
+                      <div className="flex items-center gap-2 text-[9px] text-slate-500 font-semibold pt-1 border-t border-slate-900">
+                        <span className="text-slate-400"><i className="fa-solid fa-user-graduate mr-1"></i>{post.nickname}</span>
+                        <span>•</span>
+                        <span>{new Date(post.created_at).toLocaleString('ko-KR', { hour12: false })}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    // --- 10. SEMICONDUCTOR HISTORY TIMELINE TAB ---
+    const HistoryTab = ({ onHoverWord, onLeaveWord }) => {
+      const historyData = [
+        {
+          year: "1947",
+          title: "트랜지스터 발명 (벨 연구소)",
+          desc: "존 바딘, 월터 브래튼, 윌리엄 쇼클리가 점접촉형 트랜지스터를 최초로 발명하며 진공관을 대체하고 현대 반도체 공학의 신호탄을 쏘아 올렸습니다.",
+          icon: "fa-toggle-on",
+          color: "border-cyan-500 text-cyan-400 shadow-cyan-500/20"
+        },
+        {
+          year: "1958",
+          title: "집적회로(IC) 개발",
+          desc: "텍사스 인스트루먼트의 잭 킬비가 하나의 실리콘 기판 위에 트랜지스터, 저항, 캐패시터를 모두 올린 집적회로(IC)를 최초로 시연하며 마이크로칩 시대를 열었습니다.",
+          icon: "fa-microchip",
+          color: "border-teal-500 text-teal-400 shadow-teal-500/20"
+        },
+        {
+          year: "1960",
+          title: "MOS-FET 최초 개발",
+          desc: "벨 연구소의 강대원 박사와 마틴 아탈라가 금속-산화물-반도체 전계효과 트랜지스터(MOSFET)를 최초로 개발하였습니다. 이는 현대 고집적 LSI 및 디지털 프로세서의 가장 핵심 소자가 되었습니다.",
+          icon: "fa-bolt",
+          color: "border-emerald-500 text-emerald-400 shadow-emerald-500/20"
+        },
+        {
+          year: "1965",
+          title: "무어의 법칙 (Moore's Law)",
+          desc: "페어차일드 반도체의 고든 무어가 마이크로칩에 집적되는 트랜지스터 수가 매 18~24개월마다 배로 증가한다는 무어의 법칙을 발표하여 업계 기술 지표를 정립했습니다.",
+          icon: "fa-chart-line",
+          color: "border-blue-500 text-blue-400 shadow-blue-500/20"
+        },
+        {
+          year: "1971",
+          title: "인텔 4004 마이크로프로세서",
+          desc: "인텔이 단일 칩에 CPU 기능을 집적한 세계 최초의 상용 마이크로프로세서인 4004를 출시하며 개인용 컴퓨터(PC) 및 정보통신 대중화의 근간을 마련했습니다.",
+          icon: "fa-computer",
+          color: "border-indigo-500 text-indigo-400 shadow-indigo-500/20"
+        },
+        {
+          year: "1983",
+          title: "대한민국 최초 64K D램 개발",
+          desc: "삼성전자가 세계에서 3번째로 64K D램 메모리를 독자 개발하는 데 성공하며, 후발 주자였던 대한민국이 글로벌 반도체 초강국으로 도약하는 역사적 첫 발을 떼었습니다.",
+          icon: "fa-flag",
+          color: "border-violet-500 text-violet-400 shadow-violet-500/20"
+        },
+        {
+          year: "1999",
+          title: "FinFET (3D 트랜지스터) 제안",
+          desc: "UC 버클리의 첸밍 후 교수 연구팀이 평면 트랜지스터의 미세화 한계(단채널 효과)를 물리적으로 극복하기 위해 물고기 지느러미 형태의 3차원 입체 채널을 가진 FinFET 구조를 학계에 최초 제안했습니다.",
+          icon: "fa-cubes",
+          color: "border-purple-500 text-purple-400 shadow-purple-500/20"
+        },
+        {
+          year: "2011",
+          title: "FinFET 최초 양산 적용 (22nm)",
+          desc: "인텔이 Ivy Bridge CPU 라인업에 22nm 공정 기반 Tri-Gate(FinFET) 기술을 최초로 상용 양산 도입하며, 나노 공정에서의 누설 전류 차단 한계를 넘겼습니다.",
+          icon: "fa-industry",
+          color: "border-fuchsia-500 text-fuchsia-400 shadow-fuchsia-500/20"
+        },
+        {
+          year: "2019",
+          title: "EUV (극자외선) 양산 도입",
+          desc: "기존 ArF 액침 노광의 물리적 패터닝 한계를 뛰어넘어 13.5nm 파장의 극자외선(EUV) 노광 공정이 7나노급 초미세 반도체 생산 라인에 공식 적용되어 ASML 스캐너 양산 시대를 열었습니다.",
+          icon: "fa-wand-magic-sparkles",
+          color: "border-pink-500 text-pink-400 shadow-pink-500/20"
+        },
+        {
+          year: "2022",
+          title: "3nm GAA (Gate-All-Around)",
+          desc: "채널의 4면을 게이트가 감싸 전류 누설을 원천 차단하는 나노시트(MBCFET) 기반 GAA(Gate-All-Around) 3나노 공정이 세계 최초로 양산에 성공하여 반도체 구조적 혁신을 이룩했습니다.",
+          icon: "fa-atom",
+          color: "border-amber-500 text-amber-400 shadow-amber-500/20"
+        }
+      ];
+
+      return (
+        <div className="flex flex-col h-full fade-in">
+          {/* Header */}
+          <div className="shrink-0 mb-4 px-1">
+            <h2 className="text-lg font-extrabold tracking-tight text-slate-100 flex items-center gap-2">
+              <span className="w-2.5 h-4 bg-amber-500 rounded-full"></span>
+              반도체 혁신 역사 연표
+            </h2>
+            <p className="text-[11px] text-slate-400">트랜지스터의 탄생부터 최첨단 GAA 공정까지의 마일스톤</p>
+          </div>
+
+          {/* Timeline Scroll Box */}
+          <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 pb-4 relative">
+            {/* The vertical neon line */}
+            <div className="absolute left-6 top-3 bottom-6 w-0.5 bg-gradient-to-b from-cyan-500 via-violet-500 to-amber-500 shadow-[0_0_10px_rgba(139,92,246,0.3)]"></div>
+
+            <div className="space-y-6 relative">
+              {historyData.map((item, index) => (
+                <div key={index} className="flex gap-4 items-start group">
+                  {/* Timeline dot / icon */}
+                  <div className={`w-12 h-12 rounded-full border bg-slate-950 flex items-center justify-center shrink-0 z-10 transition-all duration-300 group-hover:scale-110 shadow-[0_0_15px_transparent] group-hover:shadow-current ${item.color}`}>
+                    <i className={`fa-solid ${item.icon} text-base`}></i>
+                  </div>
+
+                  {/* Milestone Card */}
+                  <div className="flex-1 bg-slate-900/40 hover:bg-slate-900/70 border border-slate-800/80 hover:border-slate-700/60 p-4 rounded-2xl transition-all duration-300">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">{item.year}년</span>
+                      <span className="w-2 h-2 rounded-full bg-slate-800 group-hover:bg-amber-400 transition-colors"></span>
+                    </div>
+                    <h3 className="text-xs font-bold text-slate-200 mb-2">{item.title}</h3>
+                    <p className="text-[10.5px] leading-relaxed text-slate-400 select-text">
+                      <InteractiveText text={item.desc} onHoverWord={onHoverWord} onLeaveWord={onLeaveWord} />
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // --- 11. AI GENERATED NEWS TAB WITH CACHING ---
+    const NewsTab = ({ onHoverWord, onLeaveWord }) => {
+      const [news, setNews] = useState([]);
+      const [isLoading, setIsLoading] = useState(false);
+      const [lastUpdated, setLastUpdated] = useState(null);
+      const [remainingMinutes, setRemainingMinutes] = useState(0);
+      const [activeCategory, setActiveCategory] = useState('기술'); // '기술', '소부장', '시장', '주식'
+
+      const fetchNewsFromApi = async () => {
+        setIsLoading(true);
+        const prompt = `반도체 산업(소부장, 제조 공정 기술, 글로벌 시장 동향, 차세대 트랜지스터, 반도체 관련 증시 동향 및 주요 상장 주식 등)과 관련된 가상 뉴스 기사를 카테고리별로 각각 정확히 5건씩(총 20건) 생성해 주세요.
+카테고리는 반드시 다음 4가지로 정확히 분류되어야 합니다:
+1. '기술' (차세대 반도체 공정, 소자 연구, 미세화 공정 기법 등)
+2. '소부장' (반도체 소재, 부품, 장비 국산화 및 글로벌 소부장사 동향 등)
+3. '시장' (글로벌 파운드리 및 메모리 시장 점유율, 지정학적 투자 동향 등)
+4. '주식' (글로벌 주요 반도체 기업 주가 변동성 분석, 실적 가상 브리핑 및 주식 정보 등)
+
+각 뉴스 기사는 다음 필드를 가진 JSON 객체여야 합니다:
+- "title": 뉴스 제목 (전문적인 반도체 헤드라인 형태)
+- "content": 뉴스 상세 내용 요약 (3~4줄 내외, 한국어의 신뢰도 높은 기사체로 서술)
+- "category": 기사의 카테고리 (반드시 '기술', '소부장', '시장', '주식' 중 하나로 정확하게 지정)
+
+출력 형식은 오직 이 20개 뉴스 객체가 포함된 단일 JSON 배열 형태만 제공해 주세요. Markdown 코드 블록(예: \`\`\`json)은 포함해도 괜찮습니다.
+
+JSON 배열 구조 예시:
+[
+  {
+    "title": "3nm GAA 공정 수율 극대화 위한 차세대 계측 기술 양산 도입",
+    "content": "글로벌 파운드리 선두 기업들이 3나노 이하 GAA 공정의 채널 제어 능력을 강화하기 위해 나노미터급 두께 계측 장비를 생산 라인에 도입했습니다. 이번 조치로 트러블슈팅 기간이 대폭 감소할 것으로 기대됩니다.",
+    "category": "기술"
+  }
+]`;
+
+        try {
+          const rawResponse = await getGeminiResponse(prompt);
+          let raw = rawResponse.trim();
+          const jsonMatch = raw.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            raw = jsonMatch[0];
+          }
+          const parsed = JSON.parse(raw);
+          
+          setNews(parsed);
+          const now = Date.now();
+          setLastUpdated(now);
+          localStorage.setItem('semiconductor_news_cache', JSON.stringify(parsed));
+          localStorage.setItem('semiconductor_news_cache_time', String(now));
+          setRemainingMinutes(60);
+        } catch (e) {
+          console.error("AI News generation failed:", e);
+          alert("AI 뉴스를 받아오는 도중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      const loadCachedNews = () => {
+        const cached = localStorage.getItem('semiconductor_news_cache');
+        const cachedTime = localStorage.getItem('semiconductor_news_cache_time');
+        
+        if (cached && cachedTime) {
+          const elapsed = Date.now() - Number(cachedTime);
+          const oneHour = 60 * 60 * 1000;
+          
+          if (elapsed < oneHour) {
+            try {
+              setNews(JSON.parse(cached));
+              setLastUpdated(Number(cachedTime));
+              setRemainingMinutes(Math.ceil((oneHour - elapsed) / (60 * 1000)));
+              return true;
+            } catch(e) {}
+          }
+        }
+        return false;
+      };
+
+      useEffect(() => {
+        const hasCache = loadCachedNews();
+        if (!hasCache) {
+          fetchNewsFromApi();
+        }
+      }, []);
+
+      useEffect(() => {
+        const checkCooldown = () => {
+          const cachedTime = localStorage.getItem('semiconductor_news_cache_time');
+          if (cachedTime) {
+            const elapsed = Date.now() - Number(cachedTime);
+            const remaining = (60 * 60 * 1000) - elapsed;
+            if (remaining > 0) {
+              setRemainingMinutes(Math.ceil(remaining / (60 * 1000)));
+            } else {
+              setRemainingMinutes(0);
+            }
+          } else {
+            setRemainingMinutes(0);
+          }
+        };
+        
+        checkCooldown();
+        const interval = setInterval(checkCooldown, 10000); // Check every 10 seconds
+        return () => clearInterval(interval);
+      }, [lastUpdated]);
+
+      const handleRefresh = () => {
+        if (remainingMinutes > 0) {
+          alert(`아직 업데이트 락이 걸려있습니다. ${remainingMinutes}분 후에 최신화가 가능합니다.`);
+          return;
+        }
+        fetchNewsFromApi();
+      };
+
+      const formatTime = (ts) => {
+        if (!ts) return '';
+        const d = new Date(ts);
+        return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+      };
+
+      const getCategoryStyle = (cat) => {
+        switch (cat) {
+          case '기술':
+            return 'bg-cyan-950 text-cyan-400 border-cyan-850';
+          case '시장':
+            return 'bg-amber-950 text-amber-400 border-amber-850';
+          case '소부장':
+            return 'bg-purple-950 text-purple-400 border-purple-850';
+          case '주식':
+            return 'bg-emerald-950 text-emerald-400 border-emerald-850';
+          default:
+            return 'bg-slate-900 text-slate-400 border-slate-800';
+        }
+      };
+
+      const filteredNews = news.filter(item => item.category === activeCategory);
+
+      return (
+        <div className="flex flex-col h-full fade-in">
+          {/* Header */}
+          <div className="shrink-0 mb-4 px-1 flex justify-between items-end">
+            <div>
+              <h2 className="text-lg font-extrabold tracking-tight text-slate-100 flex items-center gap-2">
+                <span className="w-2.5 h-4 bg-rose-500 rounded-full"></span>
+                AI 반도체 데일리 브리핑
+              </h2>
+              <p className="text-[11px] text-slate-400 font-medium">Gemini AI가 실시간 분석한 분야별 기사 (카테고리당 5건)</p>
+            </div>
+            
+            <button
+              onClick={handleRefresh}
+              disabled={isLoading || remainingMinutes > 0}
+              className={`px-3 py-1.5 rounded-xl text-[10px] font-bold border flex items-center gap-1.5 transition-all select-none ${
+                remainingMinutes > 0
+                  ? 'bg-slate-950 border-slate-900 text-slate-500 cursor-not-allowed'
+                  : 'bg-rose-600 hover:bg-rose-500 text-white border-transparent hover:scale-102 active:scale-98'
+              }`}
+            >
+              {isLoading ? (
+                <>
+                  <i className="fa-solid fa-spinner fa-spin"></i>
+                  생성 중...
+                </>
+              ) : remainingMinutes > 0 ? (
+                <>
+                  <i className="fa-solid fa-lock text-[9px]"></i>
+                  {remainingMinutes}분 후 갱신 가능
+                </>
+              ) : (
+                <>
+                  <i className="fa-solid fa-rotate"></i>
+                  데일리 뉴스 최신화
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* News update timestamp indicator & Category selection sub-tabs */}
+          <div className="shrink-0 mb-3 px-1 flex flex-col gap-3">
+            {lastUpdated && (
+              <div className="text-[10px] text-slate-500 font-bold flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                {formatTime(lastUpdated)} 업데이트 완료 (로컬 캐시 활성화 중)
+              </div>
+            )}
+            
+            {/* Sector Tabs Bar */}
+            <div className="flex bg-slate-950 p-1 rounded-xl gap-1 text-[10.5px] font-bold border border-slate-900 shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)]">
+              {[
+                { id: '기술', label: '차세대 기술 (5)' },
+                { id: '소부장', label: '핵심 소부장 (5)' },
+                { id: '시장', label: '글로벌 시장 (5)' },
+                { id: '주식', label: '증시 및 주식 (5)' }
+              ].map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setActiveCategory(cat.id)}
+                  className={`flex-1 py-2 rounded-lg text-center transition-all ${
+                    activeCategory === cat.id 
+                      ? 'bg-rose-600/20 text-rose-400 border border-rose-500/30 shadow-[0_0_8px_rgba(244,63,94,0.1)]' 
+                      : 'text-slate-400 hover:text-slate-200 border border-transparent'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* News Cards List */}
+          <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 pb-4">
+            {isLoading ? (
+              <div className="h-64 flex flex-col items-center justify-center space-y-4">
+                <i className="fa-solid fa-wand-magic-sparkles text-3xl text-rose-500 animate-pulse"></i>
+                <span className="text-xs text-slate-400 font-bold">Gemini AI가 실시간 반도체 뉴스를 취재하고 있습니다...</span>
+                <div className="w-24 h-1 bg-slate-950 rounded-full overflow-hidden">
+                  <div className="h-full bg-rose-500 animate-[pulse_1.5s_infinite] w-full"></div>
+                </div>
+              </div>
+            ) : filteredNews.length === 0 ? (
+              <div className="h-64 flex flex-col items-center justify-center text-slate-500 text-xs gap-2">
+                <i className="fa-solid fa-newspaper text-2xl text-slate-700"></i>
+                <span>생성된 기사가 없습니다. 뉴스 최신화를 진행해 주세요.</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4">
+                {filteredNews.map((item, index) => (
+                  <div key={index} className="bg-slate-900/40 hover:bg-slate-900/60 border border-slate-800/80 hover:border-slate-700/60 p-4 rounded-2xl transition-all duration-300 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`px-2 py-0.5 rounded text-[8.5px] font-extrabold border uppercase tracking-wider ${getCategoryStyle(item.category)}`}>
+                          {item.category}
+                        </span>
+                        <span className="text-[9.5px] text-slate-500 font-bold">기사 {index + 1} / 5</span>
+                      </div>
+                      <h3 className="text-xs font-bold text-slate-200 mb-2 leading-snug">{item.title}</h3>
+                      <p className="text-[10.5px] leading-relaxed text-slate-400 select-text">
+                        <InteractiveText text={item.content} onHoverWord={onHoverWord} onLeaveWord={onLeaveWord} />
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    // --- 8. FLOATING AI CHAT COMPONENT (FAB Modal) ---
+    const FloatingAiChat = ({ pdfText, onHoverWord, onLeaveWord }) => {
+      const [isOpen, setIsOpen] = useState(false);
+      const [messages, setMessages] = useState([
+        { id: 1, role: 'assistant', text: '안녕하세요! 반도체 백서 및 교재 질문이 가능합니다. 궁금한 공정 오류나 원리를 편하게 여쭤보세요.' }
+      ]);
+      const [input, setInput] = useState('');
+      const [isLoading, setIsLoading] = useState(false);
+      const chatEndRef = useRef(null);
+
+      useEffect(() => {
+        if (isOpen) {
+          chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, [messages, isOpen]);
+
+      const handleSend = async () => {
+        if (!input.trim() || isLoading) return;
+        const text = input;
+        setInput('');
+
+        // Add user message and a placeholder message for assistant streaming
+        const userMsg = { id: Date.now(), role: 'user', text };
+        const assistantMsgId = Date.now() + 1;
+        const assistantPlaceholder = { id: assistantMsgId, role: 'assistant', text: '' };
+
+        setMessages(prev => [...prev, userMsg, assistantPlaceholder]);
+        setIsLoading(true);
+
+        // Build system instruction
+        let systemPrompt = `You are a world-class semiconductor process engineer and cleanroom troubleshooter. Explain clearly in Korean with markdown formatting.
+        CRITICAL: 특별히 사용자가 자세히 설명해달라고 하거나 길게 답변해달라고 요청하지 않는 한, 반드시 5줄 이내로 핵심만 짧고 명확하게 답해야 합니다. (Limit response to 5 lines or less in Korean unless explicitly asked otherwise.)`;
+
+        if (pdfText) {
+          systemPrompt += `\n\n[User uploaded learning document text context]:\n${pdfText}\n(Refer to this document text to answer the query if relevant.)`;
+        }
+
+        // Filter and map conversation history turns to match Gemini API specification.
+        // It must start with user turn and alternate user/model.
+        const historyTurns = messages
+          .filter(m => m.id !== 1 && m.id !== assistantMsgId && !m.text.startsWith("죄송합니다. AI 응답을 받지 못했습니다."))
+          .map(m => ({
+            role: m.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: m.text }]
+          }));
+
+        // Append the current turn
+        historyTurns.push({
+          role: 'user',
+          parts: [{ text: text }]
+        });
+
+        const payload = {
+          contents: historyTurns,
+          systemInstruction: {
+            parts: [{ text: systemPrompt }]
+          }
+        };
+
+        let fullResponse = "";
+
+        try {
+          await getGeminiResponseStream(
+            payload,
+            (chunk) => {
+              fullResponse += chunk;
+              setMessages(prev => prev.map(m => m.id === assistantMsgId ? { ...m, text: fullResponse } : m));
+            },
+            (err) => {
+              setMessages(prev => prev.map(m => m.id === assistantMsgId ? { ...m, text: `죄송합니다. AI 응답을 받지 못했습니다.\n[원인 상세]: ${err.message}` } : m));
+            }
+          );
+        } catch(e) {
+          setMessages(prev => prev.map(m => m.id === assistantMsgId ? { ...m, text: `죄송합니다. AI 응답을 받지 못했습니다.\n[원인 상세]: ${e.message}` } : m));
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      return (
+        <>
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="fixed bottom-20 right-4 w-12 h-12 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white flex items-center justify-center shadow-2xl z-50 transition-transform hover:scale-105 active:scale-95 pulse-glow"
+            title="AI 트러블슈팅 상담소 열기"
+          >
+            <i className={`fa-solid ${isOpen ? 'fa-xmark' : 'fa-brain'} text-base`}></i>
+          </button>
+
+          {isOpen && (
+            <div className="fixed bottom-36 right-4 w-80 h-96 bg-slate-950/90 border border-cyan-500/40 rounded-2xl shadow-2xl flex flex-col z-50 fade-in overflow-hidden backdrop-blur-md">
+              <div className="shrink-0 bg-slate-900 border-b border-slate-800 p-3 flex justify-between items-center">
+                <span className="text-[11.5px] font-black text-cyan-400 flex items-center gap-1.5">
+                  <i className="fa-solid fa-robot"></i>
+                  AI 실시간 공정 상담실
+                </span>
+                {pdfText && (
+                  <span className="bg-cyan-950 text-cyan-400 text-[8.5px] font-bold px-1.5 py-0.5 rounded border border-cyan-800">
+                    PDF 연동
+                  </span>
+                )}
+              </div>
+
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3.5 min-h-0 bg-slate-900/10">
+                {messages.map(m => (
+                  <div key={m.id} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
+                    <div 
+                      className={`max-w-[90%] rounded-xl p-2.5 text-[10.5px] leading-relaxed ${
+                        m.role === 'user' 
+                          ? 'bg-cyan-600 text-white rounded-tr-none' 
+                          : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none'
+                      }`}
+                    >
+                      {m.role === 'assistant' ? (
+                        m.text ? (
+                          <InteractiveText text={m.text} onHoverWord={onHoverWord} onLeaveWord={onLeaveWord} />
+                        ) : (
+                          <div className="flex items-center gap-1 py-1 px-1">
+                            <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                            <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                            <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                          </div>
+                        )
+                      ) : (
+                        m.text
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {isLoading && (
+                  <div className="text-[9.5px] text-cyan-400 font-bold flex items-center gap-1">
+                    <i className="fa-solid fa-spinner fa-spin"></i>
+                    답변중...
+                  </div>
+                )}
+                <div ref={chatEndRef} />
+              </div>
+
+              <div className="shrink-0 border-t border-slate-800 p-2 flex gap-1.5 items-center bg-slate-950">
+                <input
+                  type="text"
+                  placeholder="공정 결함에 대해 물어보세요..."
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      handleSend();
+                    } else if (e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      const userMsgs = messages.filter(m => m.role === 'user');
+                      if (userMsgs.length > 0) {
+                        setInput(userMsgs[userMsgs.length - 1].text);
+                      }
+                    }
+                  }}
+                  disabled={isLoading}
+                  className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-[10.5px] outline-none text-slate-100 placeholder-slate-500"
+                />
+                <button
+                  onClick={handleSend}
+                  disabled={isLoading || !input.trim()}
+                  className="w-7 h-7 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white flex items-center justify-center transition-colors disabled:bg-slate-800 disabled:text-slate-600"
+                >
+                  <i className="fa-solid fa-arrow-up text-xs"></i>
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      );
+    };
+
+    // --- 9. MAIN APP CONTAINER ---
+    const App = () => {
+      const [activeTab, setActiveTab] = useState('roadmap');
+      const [pdfText, setPdfText] = useState("");
+
+      const [theme, setTheme] = useState(() => localStorage.getItem('app_theme') || 'light');
+
+      useEffect(() => {
+        document.documentElement.classList.remove('light-mode', 'navy-mode');
+        if (theme === 'light') {
+          document.documentElement.classList.add('light-mode');
+        } else if (theme === 'navy') {
+          document.documentElement.classList.add('navy-mode');
+        }
+        localStorage.setItem('app_theme', theme);
+      }, [theme]);
+
+      const [customApiKey, setCustomApiKey] = useState(() => localStorage.getItem('user_gemini_api_key') || '');
+      const [isApiModalOpen, setIsApiModalOpen] = useState(false);
+
+      useEffect(() => {
+        const handleOpenModal = () => {
+          setIsApiModalOpen(true);
+        };
+        window.addEventListener('open-api-key-modal', handleOpenModal);
+        return () => {
+          window.removeEventListener('open-api-key-modal', handleOpenModal);
+        };
+      }, []);
+
+      const [useAiQuiz, setUseAiQuiz] = useState(false);
+      const [prefetchedQuiz, setPrefetchedQuiz] = useState([]);
+      const [isPrefetching, setIsPrefetching] = useState(false);
+
+      const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+      const [isRankingModalOpen, setIsRankingModalOpen] = useState(false);
+
+      const [tooltip, setTooltip] = useState({
+        isOpen: false,
+        word: '',
+        text: '',
+        x: 0,
+        y: 0,
+        isLoading: false
+      });
+
+      const [selectionMenu, setSelectionMenu] = useState({
+        isOpen: false,
+        text: '',
+        x: 0,
+        y: 0
+      });
+
+      const [glossaryCache, setGlossaryCache] = useState({});
+
+      const handleRegisterScore = async (nickname, score, level, quizType = 'all', sector = 'all') => {
+        const record = {
+          nickname,
+          score,
+          level,
+          quizType,
+          sector,
+          timestamp: Date.now()
+        };
+
+        // 1. Always save to LocalStorage as a local backup
+        const raw = localStorage.getItem('semiconductor_quiz_scores') || '[]';
+        try {
+          const list = JSON.parse(raw);
+          list.push(record);
+          localStorage.setItem('semiconductor_quiz_scores', JSON.stringify(list));
+        } catch(e) {}
+
+        // 2. Try to insert score to Supabase 'leaderboard' table
+        try {
+          const { error } = await supabase
+            .from('leaderboard')
+            .insert([{ nickname, score, level, quiz_type: quizType, sector }]);
+          if (error) throw error;
+        } catch(e) {
+          console.warn("Failed to write score to Supabase 'leaderboard' table. Error:", e.message);
+        }
+      };
+
+      // Background AI Quiz Prefetcher: Difficuly setting (level) integrated
+      const handleTriggerPrefetch = async (overrideText = null, sector = 'all', type = 'all', level = 'easy') => {
+        const textContent = overrideText !== null ? overrideText : pdfText;
+        setIsPrefetching(true);
+
+        let sectorLabel = "전체 8대 공정 종합";
+        if (sector !== 'all') {
+          const matched = PROCESS_DATA.find(p => p.id === Number(sector));
+          if (matched) sectorLabel = matched.name;
+        }
+
+        const typePrompt = type === 'all' 
+          ? "mix of multiple-choice (choice type), OX (ox type), and short-answer (short type) questions"
+          : type === 'choice'
+            ? "multiple-choice (choice type) only"
+            : type === 'ox'
+              ? "OX (ox type) only"
+              : "short-answer (short type) only";
+
+        let contextSource = "반도체 공학 일반 지식";
+        if (textContent) {
+          contextSource = `사용자가 제공한 PDF 교재 텍스트 컨텍스트:\n${textContent}\n`;
+        }
+
+        const promptText = `반도체 공정 교육용 퀴즈를 생성해 주세요.
+
+[출제 조건]
+- 선택한 공정 종류: ${sectorLabel} (${sector === 'all' ? '전체 8대 공정 통합' : '개별 공정'})
+- 문제 난이도: ${level === 'hard' ? '상 (공정 트러블슈팅, 오류 추론, 파라미터 계산 등 깊이 있는 문제)' : level === 'medium' ? '중 (작동 메커니즘, 장비 조건, 기법 비교 등 이해도 점검)' : '하 (용어 정의, 기본 개념 단순 암기)'}
+- 퀴즈 문제 종류: ${typePrompt}
+- 출제에 사용할 근거 데이터:
+${contextSource}
+
+[출력 형식 및 주의사항]
+- 반드시 아래의 JSON 형식을 따라 5개의 문제를 한국어로 생성해 주세요.
+- 응답에 Markdown 코드 블록(예: \`\`\`json)을 포함해도 괜찮지만, 파싱이 가능하도록 정확한 JSON 배열 구조만 출력해야 합니다.
+- 객관식(choice)의 options는 4개의 항목을 제공하고, answer는 정답 옵션의 인덱스("0", "1", "2", "3") 문자열이어야 합니다.
+- OX(ox)의 options는 ["O", "X"] 이고, answer는 "O" 또는 "X" 여야 합니다.
+- 주관식(short)의 options는 빈 배열 [] 이고, answer는 정확한 정답 단어(예: "EUV", "CMP" 등)여야 합니다.
+- explanation에는 오답 노트 작성을 위한 친절하고 상세한 한국어 해설을 기재해 주세요.
+
+JSON 구조 예시:
+[
+  {
+    "id": 1,
+    "procId": ${sector === 'all' ? 1 : Number(sector)},
+    "type": "choice",
+    "question": "웨이퍼 제조 공정 중 실리콘 단결정 덩어리를 일컫는 용어는 무엇인가?",
+    "options": ["잉곳", "웨이퍼", "슬라이스", "도너"],
+    "answer": "0",
+    "explanation": "고순도로 정제된 실리콘 용융액으로부터 성장시킨 단결정 실리콘 원기둥 덩어리를 잉곳(Ingot)이라고 부릅니다."
+  }
+]`;
+
+        try {
+          const rawText = await getGeminiResponse(promptText);
+          let raw = rawText.trim();
+          const jsonMatch = raw.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            raw = jsonMatch[0];
+          }
+          const parsed = JSON.parse(raw);
+          setPrefetchedQuiz(parsed);
+        } catch(err) {
+          console.warn("Background prefetch failed. Fallback default local config database will be used.", err);
+          setPrefetchedQuiz([]);
+        } finally {
+          setIsPrefetching(false);
+        }
+      };
+
+      // Hover Tooltip Trigger
+      const handleHoverWord = async (word, event) => {
+        const rect = event.target.getBoundingClientRect();
+        const x = rect.left + window.scrollX;
+        const y = rect.top + window.scrollY - 8;
+
+        setTooltip({
+          isOpen: true,
+          word,
+          text: GLOSSARY_DB[word] || glossaryCache[word] || '',
+          x,
+          y,
+          isLoading: !(GLOSSARY_DB[word] || glossaryCache[word])
+        });
+
+        if (!GLOSSARY_DB[word] && !glossaryCache[word]) {
+          try {
+            const promptText = `Explain the semiconductor related term "${word}" in 1 concise sentence in Korean.`;
+            const explanation = await getGeminiResponse(promptText);
+            const cleanExp = explanation.trim();
+            setGlossaryCache(prev => ({ ...prev, [word]: cleanExp }));
+            
+            setTooltip(prev => {
+              if (prev.word === word) {
+                return { ...prev, text: cleanExp, isLoading: false };
+              }
+              return prev;
+            });
+          } catch (err) {
+            setTooltip(prev => {
+              if (prev.word === word) {
+                return { ...prev, text: `해설 로드 실패.\n[원인]: ${err.message}`, isLoading: false };
+              }
+              return prev;
+            });
+          }
+        }
+      };
+
+      const handleLeaveWord = () => {
+        setTooltip(prev => ({ ...prev, isOpen: false }));
+      };
+
+      // Selection drag-to-explain listener
+      useEffect(() => {
+        const handleMouseUp = () => {
+          setTimeout(() => {
+            const selection = window.getSelection();
+            const selectedText = selection.toString().trim();
+            
+            // Only trigger for reasonable length terms (between 2 and 40 characters)
+            if (selectedText && selectedText.length >= 2 && selectedText.length <= 40) {
+              try {
+                const range = selection.getRangeAt(0);
+                const rect = range.getBoundingClientRect();
+                if (rect.width > 0 && rect.height > 0) {
+                  setSelectionMenu({
+                    isOpen: true,
+                    text: selectedText,
+                    x: rect.left + rect.width / 2 + window.scrollX,
+                    y: rect.top + window.scrollY - 8
+                  });
+                }
+              } catch (e) {}
+            } else {
+              setSelectionMenu(prev => prev.isOpen ? { ...prev, isOpen: false } : prev);
+              setTooltip(prev => prev.isOpen ? { ...prev, isOpen: false } : prev);
+            }
+          }, 80);
+        };
+
+        document.addEventListener('mouseup', handleMouseUp);
+        return () => {
+          document.removeEventListener('mouseup', handleMouseUp);
+        };
+      }, [glossaryCache]);
+
+      const handleSearchSelection = async () => {
+        const word = selectionMenu.text;
+        
+        setTooltip({
+          isOpen: true,
+          word,
+          text: GLOSSARY_DB[word] || glossaryCache[word] || '',
+          x: selectionMenu.x,
+          y: selectionMenu.y,
+          isLoading: !(GLOSSARY_DB[word] || glossaryCache[word])
+        });
+        setSelectionMenu(prev => ({ ...prev, isOpen: false }));
+
+        if (!GLOSSARY_DB[word] && !glossaryCache[word]) {
+          try {
+            const promptText = `Explain the semiconductor related term "${word}" in 1 concise sentence in Korean.`;
+            const explanation = await getGeminiResponse(promptText);
+            const cleanExp = explanation.trim();
+            setGlossaryCache(prev => ({ ...prev, [word]: cleanExp }));
+            
+            setTooltip(prev => {
+              if (prev.word === word) {
+                return { ...prev, text: cleanExp, isLoading: false };
+              }
+              return prev;
+            });
+          } catch (err) {
+            setTooltip(prev => {
+              if (prev.word === word) {
+                return { ...prev, text: `해설 로드 실패.\n[원인]: ${err.message}`, isLoading: false };
+              }
+              return prev;
+            });
+          }
+        }
+      };
+
+      return (
+        <div className="w-full h-full flex flex-col md:flex-row bg-slate-950/20 overflow-hidden">
+          {/* Left Sidebar Navigation for Desktop */}
+          <aside className="hidden md:flex flex-col w-64 border-r border-slate-900 bg-slate-950/95 backdrop-blur-lg p-5 justify-between z-40 shrink-0 select-none">
+            <div className="space-y-6">
+              {/* Logo / Header */}
+              <div className="flex flex-col gap-1.5 pb-4 border-b border-slate-900">
+                <h1 className="text-base font-black text-slate-100 flex items-center gap-1.5">
+                  <i className="fa-solid fa-microchip text-cyan-400"></i>
+                  Semiconductor
+                </h1>
+                <span className="text-cyan-400 text-xs font-semibold px-2.5 py-0.5 rounded bg-cyan-950 border border-cyan-800/40 w-fit">
+                  AI Academy
+                </span>
+              </div>
+
+              {/* Navigation Tabs */}
+              <div className="flex flex-col gap-1">
+                {[
+                  { id: 'roadmap', label: '8대 공정 백서', icon: 'fa-map-location-dot', color: 'text-cyan-400', activeBg: 'bg-cyan-500/10 border-cyan-500/30' },
+                  { id: 'history', label: '공정 역사 연표', icon: 'fa-timeline', color: 'text-amber-400', activeBg: 'bg-amber-500/10 border-amber-500/30' },
+                  { id: 'quiz', label: '핵심 퀴즈 스테이션', icon: 'fa-award', color: 'text-violet-400', activeBg: 'bg-violet-500/10 border-violet-500/30' },
+                  { id: 'news', label: '데일리 브리핑', icon: 'fa-newspaper', color: 'text-rose-400', activeBg: 'bg-rose-500/10 border-rose-500/30' },
+                  { id: 'community', label: '자유 게시판', icon: 'fa-clipboard-list', color: 'text-emerald-400', activeBg: 'bg-emerald-500/10 border-emerald-500/30' }
+                ].map(tab => {
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex items-center gap-3 px-3.5 py-3 rounded-xl border text-xs font-extrabold transition-all ${
+                        isActive
+                          ? `${tab.activeBg} ${tab.color}`
+                          : 'border-transparent text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
+                      }`}
+                    >
+                      <i className={`fa-solid ${tab.icon} text-sm ${tab.color}`}></i>
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Sidebar Footer Controls */}
+            <div className="space-y-3 pt-4 border-t border-slate-900">
+              {/* PDF upload status */}
+              <button 
+                onClick={() => setIsPdfModalOpen(true)}
+                className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold border transition-colors ${
+                  pdfText 
+                    ? 'bg-cyan-950/40 text-cyan-400 border-cyan-850' 
+                    : 'bg-slate-900 hover:bg-slate-800 text-slate-400 border-slate-800'
+                }`}
+              >
+                <i className="fa-solid fa-paperclip"></i>
+                {pdfText ? 'PDF 연동됨' : '교재 PDF 연동'}
+              </button>
+
+              {/* API Key Setting */}
+              <button
+                onClick={() => setIsApiModalOpen(true)}
+                className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold border transition-colors ${
+                  customApiKey 
+                    ? 'bg-emerald-950/40 text-emerald-400 border-emerald-850/60' 
+                    : 'bg-slate-900 hover:bg-slate-800 text-slate-400 border-slate-800'
+                }`}
+              >
+                <i className="fa-solid fa-key"></i>
+                {customApiKey ? 'API 키 등록됨' : '개인 API 키 입력'}
+              </button>
+
+              {/* Theme Selector */}
+              <button
+                onClick={() => setTheme(prev => {
+                  if (prev === 'dark') return 'light';
+                  if (prev === 'light') return 'navy';
+                  return 'dark';
+                })}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200 transition-colors"
+                title={
+                  theme === 'dark' ? '라이트 모드로 전환' : 
+                  theme === 'light' ? '딥 네이비 모드로 전환' : 
+                  '다크 모드로 전환'
+                }
+              >
+                <i className={`fa-solid ${
+                  theme === 'dark' ? 'fa-moon text-indigo-400' : 
+                  theme === 'light' ? 'fa-sun text-amber-500' : 
+                  'fa-circle-half-stroke text-cyan-400'
+                } text-[11px]`}></i>
+                <span className="text-xs font-bold">
+                  {theme === 'dark' ? '다크 모드' : theme === 'light' ? '라이트 모드' : '딥 네이비'}
+                </span>
+              </button>
+            </div>
+          </aside>
+
+          {/* Right Content Area */}
+          <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden">
+            {/* Header (Mobile Only) */}
+            <header className="shrink-0 bg-slate-950/80 backdrop-blur-md border-b border-slate-900 py-3 px-4 flex items-center justify-between z-10 md:hidden">
+              <h1 className="text-base font-black text-slate-100 flex items-center gap-1.5 select-none">
+                <i className="fa-solid fa-microchip text-cyan-400"></i>
+                Semiconductor <span className="text-cyan-400 text-xs font-semibold px-2 py-0.5 rounded bg-cyan-950 border border-cyan-800/40">AI Academy</span>
+              </h1>
+              
+              <div className="flex items-center gap-3">
+                {/* Theme Toggle Button */}
+                <button
+                  onClick={() => setTheme(prev => {
+                    if (prev === 'dark') return 'light';
+                    if (prev === 'light') return 'navy';
+                    return 'dark';
+                  })}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200 transition-colors shrink-0"
+                  title={
+                    theme === 'dark' ? '라이트 모드로 전환' : 
+                    theme === 'light' ? '딥 네이비 모드로 전환' : 
+                    '다크 모드로 전환'
+                  }
+                >
+                  <i className={`fa-solid ${
+                    theme === 'dark' ? 'fa-moon text-indigo-400' : 
+                    theme === 'light' ? 'fa-sun text-amber-500' : 
+                    'fa-circle-half-stroke text-cyan-400'
+                  } text-[10px]`}></i>
+                  <span className="text-[9.5px] font-bold">
+                    {theme === 'dark' ? '다크 모드' : theme === 'light' ? '라이트 모드' : '딥 네이비'}
+                  </span>
+                </button>
+
+                {/* API Key Setting Button */}
+                <button
+                  onClick={() => setIsApiModalOpen(true)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10.5px] font-bold border transition-colors shrink-0 ${
+                    customApiKey 
+                      ? 'bg-emerald-950/40 text-emerald-400 border-emerald-850/60' 
+                      : 'bg-slate-900 hover:bg-slate-800 text-slate-400 border-slate-800'
+                  }`}
+                  title="Gemini API Key 설정"
+                >
+                  <i className="fa-solid fa-key"></i>
+                  <span className="text-[9.5px] font-bold">
+                    {customApiKey ? 'API 키 등록됨' : 'API 키'}
+                  </span>
+                </button>
+
+                <button 
+                  onClick={() => setIsPdfModalOpen(true)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10.5px] font-bold border transition-colors ${
+                    pdfText 
+                      ? 'bg-cyan-950/40 text-cyan-400 border-cyan-850' 
+                      : 'bg-slate-900 hover:bg-slate-800 text-slate-400 border-slate-800'
+                  }`}
+                >
+                  <i className="fa-solid fa-paperclip"></i>
+                  {pdfText ? 'PDF 연동됨' : '교재 PDF 연동'}
+                </button>
+              </div>
+            </header>
+
+            {/* Content Main View */}
+            <main className="flex-1 min-h-0 px-4 pt-3.5 pb-20 md:pb-6 relative md:max-w-5xl md:mx-auto md:w-full">
+              {activeTab === 'roadmap' && (
+                <RoadmapTab 
+                  onHoverWord={handleHoverWord}
+                  onLeaveWord={handleLeaveWord}
+                />
+              )}
+              {activeTab === 'history' && (
+                <HistoryTab 
+                  onHoverWord={handleHoverWord}
+                  onLeaveWord={handleLeaveWord}
+                />
+              )}
+              {activeTab === 'quiz' && (
+                <QuizTab 
+                  onHoverWord={handleHoverWord}
+                  onLeaveWord={handleLeaveWord}
+                  prefetchedQuiz={prefetchedQuiz}
+                  isPrefetching={isPrefetching}
+                  onRegisterScore={handleRegisterScore}
+                  onTriggerPrefetch={handleTriggerPrefetch}
+                  useAiQuiz={useAiQuiz}
+                  setUseAiQuiz={setUseAiQuiz}
+                  onOpenRanking={() => setIsRankingModalOpen(true)}
+                  pdfText={pdfText}
+                />
+              )}
+              {activeTab === 'news' && (
+                <NewsTab 
+                  onHoverWord={handleHoverWord}
+                  onLeaveWord={handleLeaveWord}
+                />
+              )}
+              {activeTab === 'community' && (
+                <CommunityTab />
+              )}
+            </main>
+
+            {/* Bottom Mobile Navigation Bar */}
+            <nav className="fixed bottom-0 left-0 right-0 h-16 bg-slate-950/95 backdrop-blur-lg border-t border-slate-900/80 flex items-center justify-around px-2 z-40 md:hidden">
+              {/* Roadmap Tab Button */}
+              <button
+                onClick={() => setActiveTab('roadmap')}
+                className={`flex flex-col items-center gap-1 py-1 w-16 transition-all ${
+                  activeTab === 'roadmap' ? 'text-cyan-400 scale-105' : 'text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                <i className="fa-solid fa-map-location-dot text-lg"></i>
+                <span className="text-[9px] font-bold">8대 공정</span>
+              </button>
+
+              {/* History Tab Button */}
+              <button
+                onClick={() => setActiveTab('history')}
+                className={`flex flex-col items-center gap-1 py-1 w-16 transition-all ${
+                  activeTab === 'history' ? 'text-amber-400 scale-105' : 'text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                <i className="fa-solid fa-timeline text-lg"></i>
+                <span className="text-[9px] font-bold">공정 역사</span>
+              </button>
+
+              {/* Quiz Tab Button */}
+              <button
+                onClick={() => setActiveTab('quiz')}
+                className={`flex flex-col items-center gap-1 py-1 w-16 transition-all ${
+                  activeTab === 'quiz' ? 'text-violet-400 scale-105' : 'text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                <i className="fa-solid fa-award text-lg"></i>
+                <span className="text-[9px] font-bold">핵심 퀴즈</span>
+              </button>
+
+              {/* News Tab Button */}
+              <button
+                onClick={() => setActiveTab('news')}
+                className={`flex flex-col items-center gap-1 py-1 w-16 transition-all ${
+                  activeTab === 'news' ? 'text-rose-400 scale-105' : 'text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                <i className="fa-solid fa-newspaper text-lg"></i>
+                <span className="text-[9px] font-bold">데일리 뉴스</span>
+              </button>
+
+              {/* Community Tab Button */}
+              <button
+                onClick={() => setActiveTab('community')}
+                className={`flex flex-col items-center gap-1 py-1 w-16 transition-all ${
+                  activeTab === 'community' ? 'text-emerald-400 scale-105' : 'text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                <i className="fa-solid fa-clipboard-list text-lg"></i>
+                <span className="text-[9px] font-bold">게시판</span>
+              </button>
+            </nav>
+          </div>
+
+          {/* PDF Attachment Modal */}
+          <PdfUploadModal
+            isOpen={isPdfModalOpen}
+            onClose={() => setIsPdfModalOpen(false)}
+            pdfText={pdfText}
+            setPdfText={setPdfText}
+            onTriggerPrefetch={handleTriggerPrefetch}
+          />
+
+          {/* API Key Modal */}
+          <ApiKeyModal
+            isOpen={isApiModalOpen}
+            onClose={() => setIsApiModalOpen(false)}
+            onKeySave={setCustomApiKey}
+          />
+
+          {/* Leaderboard Modal */}
+          <RankingModal
+            isOpen={isRankingModalOpen}
+            onClose={() => setIsRankingModalOpen(false)}
+          />
+
+          {/* Floating AI Chatbot overlay */}
+          <FloatingAiChat 
+            pdfText={pdfText} 
+            onHoverWord={handleHoverWord} 
+            onLeaveWord={handleLeaveWord} 
+          />
+
+          {/* Text Selection Floating Menu */}
+          {selectionMenu.isOpen && (
+            <button
+              style={{
+                left: `${selectionMenu.x}px`,
+                top: `${selectionMenu.y}px`,
+                transform: 'translate(-50%, -100%)'
+              }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onMouseUp={(e) => {
+                e.stopPropagation();
+              }}
+              onClick={handleSearchSelection}
+              className="absolute z-50 px-3 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white border border-cyan-400/40 rounded-xl shadow-xl text-[10.5px] font-bold flex items-center gap-1.5 transition-all scale-105 active:scale-95 fade-in cursor-pointer select-none"
+            >
+              <i className="fa-solid fa-wand-magic-sparkles text-[10px]"></i>
+              AI 용어 해설
+            </button>
+          )}
+
+          {/* Floating Tooltip Component */}
+          {tooltip.isOpen && (
+            <div 
+              style={{ 
+                left: `${tooltip.x}px`, 
+                top: `${tooltip.y}px`,
+                transform: 'translate(-50%, -100%)' 
+              }}
+              className="absolute z-50 w-64 p-3 bg-slate-950/95 border border-cyan-500/80 rounded-xl shadow-2xl text-[10.5px] leading-relaxed text-slate-200 pointer-events-none fade-in active-tab-glow backdrop-blur-md"
+            >
+              <div className="font-extrabold text-cyan-400 mb-1 flex items-center gap-1">
+                <i className="fa-solid fa-circle-info text-[9px]"></i>
+                {tooltip.word}
+              </div>
+              {tooltip.isLoading ? (
+                <div className="flex items-center gap-1.5 text-slate-500">
+                  <i className="fa-solid fa-spinner fa-spin"></i>
+                  AI 실시간 정의 검색 중...
+                </div>
+              ) : (
+                tooltip.text
+              )}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+  
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js')
+          .then((reg) => console.log('Service Worker registered successfully:', reg.scope))
+          .catch((err) => console.warn('Service Worker registration failed:', err));
+      });
+    }
+  </script>
+</body>
+
+</html>

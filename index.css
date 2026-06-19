@@ -1,0 +1,294 @@
+:root {
+  /* Default Dark Mode: Styled exactly with Google Stitch Cyber-Industrial theme colors */
+  --color-slate-50-rgb: 255, 255, 255;
+  --color-slate-100-rgb: 217, 226, 255; /* Stitch #d9e2ff (Bright Lavender-Cyan Text) */
+  --color-slate-200-rgb: 217, 226, 255; /* Stitch #d9e2ff (Base Text) */
+  --color-slate-300-rgb: 197, 198, 205; /* Stitch #c5c6cd (Muted Secondary Text) */
+  --color-slate-400-rgb: 197, 198, 205; /* Stitch #c5c6cd */
+  --color-slate-500-rgb: 100, 116, 139;
+  --color-slate-600-rgb: 71, 85, 105;
+  --color-slate-700-rgb: 65, 228, 192;  /* Stitch #41e4c0 (Teal/Cyan hover border accent) */
+  --color-slate-800-rgb: 30, 43, 69;   /* Stitch #1E2B45 (Borders) */
+  --color-slate-850-rgb: 26, 36, 62;    /* Stitch Dark Border helper */
+  --color-slate-900-rgb: 21, 31, 55;    /* Stitch Card Surface #151f37 */
+  --color-slate-950-rgb: 8, 19, 42;     /* Stitch Base Background #08132a */
+  --color-nano-dark-rgb: 21, 31, 55;
+  --color-nano-cyan: #06b6d4;
+  --color-nano-emerald: #10b981;
+  --color-nano-violet: #8b5cf6;
+}
+:root.light-mode {
+  /* Silicon Pulse (Light Mode) */
+  --color-slate-55-rgb: 25, 28, 29;
+  --color-slate-50-rgb: 25, 28, 29;      /* on-surface (near black) */
+  --color-slate-100-rgb: 25, 28, 29;     /* heading-lg */
+  --color-slate-200-rgb: 25, 28, 29;     /* body text */
+  --color-slate-300-rgb: 75, 85, 99;      /* silicon-gray (#4B5563) */
+  --color-slate-400-rgb: 115, 118, 133;   /* outline (#737685) */
+  --color-slate-500-rgb: 115, 118, 133;
+  --color-slate-600-rgb: 195, 198, 214;  /* outline-variant */
+  --color-slate-700-rgb: 0, 61, 155;     /* primary (tech blue #003d9b) */
+  --color-slate-800-rgb: 229, 231, 235;   /* wafer-silver (#E5E7EB) */
+  --color-slate-850-rgb: 243, 244, 245;   /* surface-container-low */
+  --color-slate-900-rgb: 255, 255, 255;   /* surface (white card surface) */
+  --color-slate-950-rgb: 248, 249, 250;   /* background/surface (#f8f9fa) */
+  --color-nano-dark-rgb: 255, 255, 255;
+  --color-nano-cyan: #003d9b;      /* Tech Blue */
+  --color-nano-emerald: #006c49;   /* Success Green */
+  --color-nano-violet: #00408f;    /* Tertiary Blue */
+}
+:root.navy-mode {
+  --color-slate-50-rgb: 137, 210, 220; /* 89D2DC */
+  --color-slate-100-rgb: 137, 210, 220; /* 89D2DC */
+  --color-slate-200-rgb: 137, 210, 220; /* 89D2DC */
+  --color-slate-300-rgb: 137, 210, 220; /* 89D2DC */
+  --color-slate-400-rgb: 101, 100, 219; /* 6564DB */
+  --color-slate-500-rgb: 101, 100, 219; /* 6564DB */
+  --color-slate-600-rgb: 101, 100, 219; /* 6564DB */
+  --color-slate-700-rgb: 101, 100, 219; /* 6564DB */
+  --color-slate-800-rgb: 35, 46, 209; /* 232ED1 */
+  --color-slate-850-rgb: 20, 35, 80; /* Blend of 101D42 and 232ED1 */
+  --color-slate-900-rgb: 16, 29, 66; /* 101D42 */
+  --color-slate-950-rgb: 13, 19, 23; /* 0D1317 */
+  --color-nano-dark-rgb: 16, 29, 66;
+  --color-nano-cyan: #89d2dc;
+  --color-nano-emerald: #6564db;
+  --color-nano-violet: #6564db;
+}
+body {
+  margin: 0;
+  overflow: hidden;
+  background-color: rgb(var(--color-slate-950-rgb));
+  color: rgb(var(--color-slate-200-rgb));
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+/* Ambient Glow background */
+.glow-bg {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(140px);
+  opacity: 0.15;
+  z-index: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.light-mode .glow-bg {
+  opacity: 0.04;
+}
+/* Scrollbar style */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgb(var(--color-slate-800-rgb));
+  border-radius: 10px;
+  transition: background-color 0.3s ease;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(var(--color-slate-700-rgb));
+}
+/* Fade-in Animation */
+.fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* Hover Term Anchor Styling */
+.term-highlight {
+  border-bottom: 2px dashed #06b6d4;
+  cursor: help;
+  transition: all 0.2s;
+}
+.term-highlight:hover {
+  color: #06b6d4;
+  background-color: rgba(6, 182, 212, 0.1);
+}
+/* Glow Button Pulse */
+.pulse-glow {
+  animation: pulseGlow 2s infinite;
+}
+@keyframes pulseGlow {
+  0% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(6, 182, 212, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
+}
+/* Wafer 3D & Feedback Styles */
+.wafer-3d-container {
+  perspective: 1000px;
+}
+.wafer-3d {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #64748b 0%, #1e293b 70%, #0f172a 100%);
+  box-shadow: 
+    0 15px 30px rgba(0, 0, 0, 0.7), 
+    inset 0 3px 6px rgba(255, 255, 255, 0.25),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.5);
+  position: relative;
+  transform-style: preserve-3d;
+  transform: rotateX(45deg) rotateY(0deg);
+  transition: all 0.5s ease;
+  animation: waferSpin 1.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+.wafer-grid {
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background-size: 10px 10px;
+  background-image: 
+    linear-gradient(to right, rgba(6, 182, 212, 0.25) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(6, 182, 212, 0.25) 1px, transparent 1px);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  mask-image: radial-gradient(circle, black 65%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle, black 65%, transparent 100%);
+}
+.wafer-notch {
+  position: absolute;
+  bottom: -3px;
+  left: calc(50% - 5px);
+  width: 10px;
+  height: 10px;
+  background-color: rgb(var(--color-slate-950-rgb)); /* match background */
+  border-radius: 50%;
+}
+.wafer-reflection {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 100%);
+  pointer-events: none;
+}
+@keyframes waferSpin {
+  0% {
+    transform: rotateX(65deg) rotateY(0deg) rotateZ(0deg) scale(0.6);
+    filter: brightness(0.5);
+  }
+  40% {
+    transform: rotateX(45deg) rotateY(180deg) rotateZ(180deg) scale(1.15);
+    filter: brightness(1.2) drop-shadow(0 0 15px rgba(6,182,212,0.4));
+  }
+  100% {
+    transform: rotateX(45deg) rotateY(360deg) rotateZ(360deg) scale(1);
+    filter: brightness(1);
+  }
+}
+/* Feedback Indicator Animations */
+.animate-feedback-correct {
+  animation: feedbackCorrect 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+.animate-feedback-incorrect {
+  animation: feedbackIncorrect 0.5s ease-out forwards;
+}
+@keyframes feedbackCorrect {
+  0% {
+    transform: scale(0.7) translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes feedbackIncorrect {
+  0% {
+    transform: scale(0.7) translateY(20px);
+    opacity: 0;
+  }
+  15% { transform: scale(1) translateX(-8px); opacity: 1; }
+  30% { transform: scale(1) translateX(8px); }
+  45% { transform: scale(1) translateX(-5px); }
+  60% { transform: scale(1) translateX(5px); }
+  75%, 100% { transform: scale(1) translateX(0); opacity: 1; }
+}
+
+/* ========================================================
+   GOOGLE STITCH DESIGN SYSTEM EXTENSIONS & GLOW OVERRIDES
+   ======================================================== */
+
+/* Glassmorphism Overrides for Tailwind Card & Nav components */
+.bg-slate-900\/40, .bg-slate-900\/60, .bg-slate-950\/80, .bg-slate-950\/90, .bg-slate-950\/95 {
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+}
+
+/* Custom premium glow effects on cards hover (Stitch command-center theme) */
+.hover\:border-slate-700\/60:hover, .hover\:border-slate-700:hover {
+  box-shadow: 0 0 20px rgba(65, 228, 192, 0.12) !important;
+  border-color: rgba(65, 228, 192, 0.4) !important;
+  transform: translateY(-2px);
+}
+
+/* Silicon Pulse (Light Mode) Custom Overrides */
+.light-mode .bg-slate-900\/40,
+.light-mode .bg-slate-900\/60,
+.light-mode .bg-slate-950\/80,
+.light-mode .bg-slate-950\/90,
+.light-mode .bg-slate-950\/95 {
+  background-color: #ffffff !important;
+  border-color: #E5E7EB !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+}
+
+.light-mode .hover\:border-slate-700\/60:hover,
+.light-mode .hover\:border-slate-700:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 61, 155, 0.08) !important;
+  border-color: #003d9b !important;
+  transform: translateY(-2px);
+}
+
+/* Silicon Pulse Hero Gradient override */
+.hero-gradient {
+  background: linear-gradient(135deg, #151f37 0%, #08132a 100%);
+}
+.light-mode .hero-gradient {
+  background: linear-gradient(135deg, #003d9b 0%, #001848 100%) !important;
+}
+.navy-mode .hero-gradient {
+  background: linear-gradient(135deg, #101D42 0%, #0D1317 100%) !important;
+}
+
+/* Ensure nice transition for border glows */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 250ms;
+}
+
+/* Sidebar Custom Tech Console styles */
+aside {
+  background-image: radial-gradient(circle at 10% 20%, rgba(16, 29, 66, 0.15) 0%, transparent 80%);
+}
+.light-mode aside {
+  background-image: radial-gradient(circle at 10% 20%, rgba(220, 227, 235, 0.5) 0%, transparent 80%);
+}
+aside button {
+  position: relative;
+  overflow: hidden;
+}
+aside button::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 25%;
+  height: 50%;
+  width: 3px;
+  background-color: transparent;
+  border-radius: 0 4px 4px 0;
+  transition: all 0.2s ease;
+}
+aside button:hover::after {
+  background-color: rgb(var(--color-slate-700-rgb));
+  height: 70%;
+  top: 15%;
+}
+
