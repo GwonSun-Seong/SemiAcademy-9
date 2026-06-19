@@ -1,51 +1,78 @@
-# Semiconductor AI Academy Local Server
-# Run this script with PowerShell to host the project on http://localhost:8000
-
+# Semiconductor AI Academy TCP Socket Server
+# Robust to browser aborts and connection resets
 $port = 8000
-$listener = New-Object System.Net.HttpListener
-$listener.Prefixes.Add("http://localhost:$port/")
+$listener = New-Object System.Net.Sockets.TcpListener([System.Net.IPAddress]::Any, $port)
 
 try {
     $listener.Start()
     Write-Host "`n==========================================================" -ForegroundColor Green
-    Write-Host " Semiconductor AI Academy Local Server 가동 중!" -ForegroundColor Green
+    Write-Host " Semiconductor AI Academy TCP Server 가동 중!" -ForegroundColor Green
     Write-Host " 접속 주소: http://localhost:$port/" -ForegroundColor Cyan
-    Write-Host " 서버를 종료하려면 이 창에서 [Ctrl + C]를 누르세요." -ForegroundColor Yellow
     Write-Host "==========================================================`n" -ForegroundColor Green
 
     $currentDir = Get-Item $PSScriptRoot
-    while ($listener.IsListening) {
-        $context = $listener.GetContext()
-        $request = $context.Request
-        $response = $context.Response
-
-        $rawPath = $request.Url.LocalPath
-        if ($rawPath -eq "/") { $rawPath = "/index.html" }
-        
-        $filePath = Join-Path $currentDir.FullName $rawPath.TrimStart('/')
-        if (Test-Path $filePath -PathType Leaf) {
-            $bytes = [System.IO.File]::ReadAllBytes($filePath)
+    while ($true) {
+        $client = $null
+        try {
+            $client = $listener.AcceptTcpClient()
+            $stream = $client.GetStream()
             
-            # MIME Type Mapping
-            $ext = [System.IO.Path]::GetExtension($filePath).ToLower()
-            $contentType = "text/plain"
-            if ($ext -eq ".html" -or $ext -eq ".htm") { $contentType = "text/html; charset=utf-8" }
-            elseif ($ext -eq ".css") { $contentType = "text/css" }
-            elseif ($ext -eq ".js") { $contentType = "application/javascript" }
-            elseif ($ext -eq ".png") { $contentType = "image/png" }
-            elseif ($ext -eq ".jpg" -or $ext -eq ".jpeg") { $contentType = "image/jpeg" }
-            elseif ($ext -eq ".svg") { $contentType = "image/svg+xml" }
+            $reader = New-Object System.IO.StreamReader($stream)
+            $requestLine = $reader.ReadLine()
+            if ([string]::IsNullOrEmpty($requestLine)) {
+                $client.Close()
+                continue
+            }
             
-            $response.ContentType = $contentType
-            $response.ContentLength64 = $bytes.Length
-            $response.OutputStream.Write($bytes, 0, $bytes.Length)
-        } else {
-            $response.StatusCode = 404
-            $errBytes = [System.Text.Encoding]::UTF8.GetBytes("404 Not Found")
-            $response.ContentLength64 = $errBytes.Length
-            $response.OutputStream.Write($errBytes, 0, $errBytes.Length)
+            # Parse path
+            $parts = $requestLine.Split(' ')
+            if ($parts.Length -lt 2) {
+                $client.Close()
+                continue
+            }
+            
+            $rawPath = $parts[1]
+            $rawPath = $rawPath.Split('?')[0] # strip query parameters
+            if ($rawPath -eq "/") { $rawPath = "/index.html" }
+            
+            $filePath = Join-Path $currentDir.FullName $rawPath.TrimStart('/')
+            
+            if (Test-Path $filePath -PathType Leaf) {
+                $bytes = [System.IO.File]::ReadAllBytes($filePath)
+                
+                # MIME Type Mapping
+                $ext = [System.IO.Path]::GetExtension($filePath).ToLower()
+                $contentType = "text/plain"
+                if ($ext -eq ".html" -or $ext -eq ".htm") { $contentType = "text/html; charset=utf-8" }
+                elseif ($ext -eq ".css") { $contentType = "text/css" }
+                elseif ($ext -eq ".js") { $contentType = "application/javascript" }
+                elseif ($ext -eq ".png") { $contentType = "image/png" }
+                elseif ($ext -eq ".jpg" -or $ext -eq ".jpeg") { $contentType = "image/jpeg" }
+                elseif ($ext -eq ".svg") { $contentType = "image/svg+xml" }
+                
+                $header = "HTTP/1.1 200 OK`r`nContent-Type: $contentType`r`nContent-Length: $($bytes.Length)`r`nConnection: close`r`n`r`n"
+                $headerBytes = [System.Text.Encoding]::UTF8.GetBytes($header)
+                
+                $stream.Write($headerBytes, 0, $headerBytes.Length)
+                $stream.Write($bytes, 0, $bytes.Length)
+            } else {
+                $errBody = "404 Not Found"
+                $errBytes = [System.Text.Encoding]::UTF8.GetBytes($errBody)
+                $header = "HTTP/1.1 404 Not Found`r`nContent-Type: text/plain`r`nContent-Length: $($errBytes.Length)`r`nConnection: close`r`n`r`n"
+                $headerBytes = [System.Text.Encoding]::UTF8.GetBytes($header)
+                
+                $stream.Write($headerBytes, 0, $headerBytes.Length)
+                $stream.Write($errBytes, 0, $errBytes.Length)
+            }
+            
+            $stream.Close()
+            $client.Close()
+        } catch {
+            Write-Warning "Connection error ignored: $_"
+            if ($client) {
+                $client.Close()
+            }
         }
-        $response.Close()
     }
 } catch {
     Write-Error $_

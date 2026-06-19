@@ -1,0 +1,973 @@
+diff a/index.html b/index.html	(rejected hunks)
+@@ -1,11 +1,15 @@
+-<!DOCTYPE html>
++﻿<!DOCTYPE html>
+ <html lang="ko">
+ <head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+-  <title>Semiconductor AI Academy Companion</title>
++  <title>반도체 도와줘! ⚡ (9조)</title>
+   <meta name="description" content="반도체 8대 공정 학습 가이드, AI 트러블슈팅 챗봇, AI 자동 생성 퀴즈를 제공하는 스마트 교육 서비스">
+   
++  <!-- Three.js & OrbitControls for 3D FET Explorer -->
++  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
++  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
++  
+   <!-- Tailwind CSS CDN -->
+   <script src="https://cdn.tailwindcss.com"></script>
+   <script>
+@@ -96,8 +100,7 @@
+   <!-- React Mount Point -->
+   <div id="root" class="relative z-10 w-full h-full"></div>
+ 
+-  <!-- External API Key Modal Component -->
+-  <script src="./api-key-modal.js"></script>
++  <!-- Inline API Key Modal is defined within the main module block -->
+ 
+   <!-- React Script block -->
+   <script type="text/babel" data-type="module">
+@@ -1194,10 +1197,101 @@
+       );
+     };
+ 
+-    // --- 4.5 API KEY SETTINGS MODAL COMPONENT (DYNAMIC WRAPPER) ---
+-    const ApiKeyModal = (props) => {
+-      if (!window.ApiKeyModal) return null;
+-      return <window.ApiKeyModal {...props} />;
++    // --- 4.5 API KEY SETTINGS MODAL COMPONENT ---
++    const ApiKeyModal = ({ isOpen, onClose, onKeySave }) => {
++      if (!isOpen) return null;
++
++      const [inputKey, setInputKey] = useState(() => localStorage.getItem('user_gemini_api_key') || '');
++      const [showKey, setShowKey] = useState(false);
++
++      useEffect(() => {
++        if (isOpen) {
++          setInputKey(localStorage.getItem('user_gemini_api_key') || '');
++        }
++      }, [isOpen]);
++
++      const handleSave = () => {
++        const trimmed = inputKey.trim();
++        if (trimmed) {
++          localStorage.setItem('user_gemini_api_key', trimmed);
++          onKeySave(trimmed);
++          alert("개인 API 키가 안전하게 등록되었습니다.");
++        } else {
++          localStorage.removeItem('user_gemini_api_key');
++          onKeySave('');
++          alert("개인 API 키가 삭제되었습니다. 공용 API 키로 복구됩니다.");
++        }
++        onClose();
++      };
++
++      const handleClear = () => {
++        if (confirm("등록된 API 키를 삭제하시겠습니까?")) {
++          localStorage.removeItem('user_gemini_api_key');
++          setInputKey('');
++          onKeySave('');
++          alert("삭제 완료! 다시 공용 API 키를 순회하여 사용합니다.");
++          onClose();
++        }
++      };
++
++      return (
++        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
++          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-sm p-5 shadow-2xl relative fade-in">
++            <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-200">✕</button>
++            <div className="space-y-4">
++              <div className="flex items-center gap-2 text-slate-100">
++                <i className="fa-solid fa-key text-cyan-400"></i>
++                <h3 className="text-sm font-bold">Google Gemini API 설정</h3>
++              </div>
++              <p className="text-[10px] text-slate-400 leading-relaxed bg-slate-950/60 p-2.5 border border-slate-850 rounded-xl">
++                <strong>💡 개인 API 키 사용 권장</strong><br />
++                여러 사람이 공용 키를 사용할 경우 일일 요청 횟수 제한(Quota Limit)으로 서비스가 일시 중지될 수 있습니다. 개인 키를 등록하면 중단 없이 무제한 사용 가능하며, 키는 <strong>본인의 브라우저 로컬 저장소(LocalStorage)에만 안전하게 보관</strong>되고 절대 외부 서버로 수집되지 않습니다.
++              </p>
++              <div className="space-y-1.5">
++                <label className="block text-[10px] text-slate-400 font-bold">Gemini API Key 입력</label>
++                <div className="relative">
++                  <input
++                    type={showKey ? "text" : "password"}
++                    placeholder="AIzaSy..."
++                    value={inputKey}
++                    onChange={e => setInputKey(e.target.value)}
++                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-3 pr-10 py-2.5 text-xs text-slate-100 outline-none focus:border-cyan-500 font-mono"
++                  />
++                  <button
++                    type="button"
++                    onClick={() => setShowKey(!showKey)}
++                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs"
++                  >
++                    <i className={`fa-solid ${showKey ? 'fa-eye-slash' : 'fa-eye'}`}></i>
++                  </button>
++                </div>
++              </div>
++              <div className="text-[10px] text-slate-500 leading-normal">
++                키가 없으신가요? <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-cyan-400 font-black hover:underline">Google AI Studio에서 무료 API 키 발급받기 ↗</a> (구글 계정만 있으면 3초 만에 무료 생성 가능)
++              </div>
++              <div className="flex gap-2 pt-2 border-t border-slate-850">
++                {localStorage.getItem('user_gemini_api_key') && (
++                  <button
++                    type="button"
++                    onClick={handleClear}
++                    className="flex-1 py-2 rounded-lg bg-rose-950/30 hover:bg-rose-900/40 text-rose-400 text-xs font-bold border border-rose-950/30 transition-colors"
++                  >
++                    삭제
++                  </button>
++                )}
++                <button
++                  type="button"
++                  onClick={handleSave}
++                  className="flex-[2] py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-extrabold rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5 shadow-lg shadow-cyan-500/15"
++                >
++                  <i className="fa-solid fa-circle-check"></i>
++                  {inputKey.trim() ? 'API 키 등록' : '취소'}
++                </button>
++              </div>
++            </div>
++          </div>
++        </div>
++      );
+     };
+ 
+     // --- 5. ROADMAP TAB ---
+@@ -1568,6 +1662,15 @@ JSON 배열 구조 예시:
+       };
+ 
+       const handleStartQuiz = () => {
++        if (useAiQuiz) {
++          const userKey = localStorage.getItem('user_gemini_api_key');
++          if (!userKey || !userKey.trim()) {
++            alert("AI 맞춤형 퀴즈를 생성하려면 먼저 개인 Gemini API 키를 등록해야 합니다. API 키 설정 창을 엽니다.");
++            window.dispatchEvent(new CustomEvent('open-api-key-modal'));
++            return;
++          }
++        }
++
+         setAnswersChecked(false);
+         setUserAnswers({});
+         setCurrentIdx(0);
+@@ -1711,28 +1814,89 @@ JSON 배열 구조 예시:
+                 </button>
+               </div>
+ 
++              {/* Quiz Source Card */}
++              <div className="bg-slate-900/60 p-4 border border-slate-800/80 rounded-2xl space-y-4">
++                <h3 className="text-xs font-bold text-slate-200">1. �                  {/* 3D Wafer Feedback Overlay */}
++                  {feedback.show && (
++                    <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-30 flex flex-col items-center p-4 overflow-y-auto custom-scrollbar space-y-4 rounded-2xl fade-in justify-between">
++                      <div className="w-full flex-1 flex flex-col items-center justify-center space-y-4 min-h-0">
++                        <div className="wafer-3d-container scale-[0.65] -my-4 shrink-0 hidden md:block hidden md:block">
++                          <div className="wafer-3d">
++                            <div className="wafer-grid"></div>
++                            <div className="wafer-notch"></div>
++                            <div className="wafer-reflection"></div>
++                          </div>
++                        </div>
++                        
++                        <div className={`px-4 py-2 rounded-xl text-xs font-black border tracking-wider shadow-lg shrink-0 ${
++                          feedback.isCorrect 
++                            ? 'bg-emerald-950/90 text-emerald-400 border-emerald-500/40 shadow-emerald-500/20 animate-feedback-correct' 
++                            : 'bg-rose-950/90 text-rose-400 border-rose-500/40 shadow-rose-500/20 animate-feedback-incorrect'
++                        }`}>
++                          {feedback.isCorrect ? (
++                            <span className="flex flex-col items-center gap-1">
++                              <span className="flex items-center gap-1.5">
++                                <i className="fa-solid fa-circle-check text-sm text-emerald-400"></i>
++                                정답입니다! (+{speedBonuses[currentIdx] ? Math.round(levelMultiplier * 10 * 1.2) : levelMultiplier * 10}점)
++                              </span>
++                              {speedBonuses[currentIdx] && (
++                                <span className="text-[10px] text-yellow-400 font-extrabold flex items-center gap-1 mt-0.5 animate-pulse">
++                                  <i className="fa-solid fa-bolt text-yellow-400"></i>
++                                  ⚡ 3초 퀵 보너스 적용! (+20%)
++                                </span>
++                              )}
++                            </span>
++                          ) : (
++                            <span className="flex items-center gap-1.5 flex-col items-center text-center">
++                              <span className="flex items-center gap-1.5">
++                                <i className="fa-solid fa-circle-xmark text-sm text-rose-400"></i>
++                                오답입니다!
++                              </span>
++                              <span className="text-[10px] text-rose-300 font-semibold mt-1">
++                                정답: {currentQuestion.type === 'choice' ? currentQuestion.options[Number(currentQuestion.answer)] : currentQuestion.answer}
++                              </span>
++                            </span>
++                          )}
++                        </div>
++ 
++                        {/* Detailed Explanation Study Card */}
++                        <div className="w-full bg-slate-900/90 border border-slate-800/80 rounded-xl p-3 text-[11px] leading-relaxed text-slate-300 max-h-48 overflow-y-auto custom-scrollbar select-text">
++                          <div className="font-extrabold text-cyan-400 mb-1 flex items-center gap-1 shrink-0">
++                            <i className="fa-solid fa-book-open text-[10px]"></i>
++                            해설
++                          </div>
++                          <InteractiveText text={currentQuestion.explanation} onHoverWord={onHoverWord} onLeaveWord={onLeaveWord} />
++                        </div>
++                      </div>
++ 
++                      <div className="w-full shrink-0 pt-2 border-t border-slate-900/80">
++                        <button
++                          onClick={confirmFeedbackAndProceed}
++                          className="w-full py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-extrabold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-lg active-tab-glow"
++                        >
++                          공부 완료 & 다음 문항
++                          <i className="fa-solid fa-chevron-right text-[10px]"></i>
++                        </button>
++                      </div>
++                    </div>
++                  )}
++                </div>
++              )}
++
+               {/* Quiz Source Card */}
+               <div className="bg-slate-900/60 p-4 border border-slate-800/80 rounded-2xl space-y-4">
+                 <h3 className="text-xs font-bold text-slate-200">1. 퀴즈 소스 선택</h3>
+                 <div className="grid grid-cols-2 gap-3 text-xs">
+                   <button
+                     onClick={() => setUseAiQuiz(false)}
+-                    className={`p-3 rounded-xl border font-bold text-center transition-all ${
+-                      !useAiQuiz 
+-                        ? 'bg-violet-600/15 border-violet-500 text-violet-400' 
+-                        : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-800'
+-                    }`}
++                    className={p-3 rounded-xl border font-bold text-center transition-all \}
+                   >
+                     <i className="fa-solid fa-book-open text-base mb-1.5 block"></i>
+                     내장 공정 백서
+                   </button>
+                   <button
+                     onClick={() => setUseAiQuiz(true)}
+-                    className={`p-3 rounded-xl border font-bold text-center transition-all relative ${
+-                      useAiQuiz 
+-                        ? 'bg-violet-600/15 border-violet-500 text-violet-400' 
+-                        : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-800'
+-                    }`}
++                    className={p-3 rounded-xl border font-bold text-center transition-all relative \}
+                   >
+                     {isPrefetching && (
+                       <span className="absolute top-1 right-2 flex h-2 w-2">
+@@ -1790,12 +1954,6 @@ JSON 배열 구조 예시:
+                       onChange={e => setConfigType(e.target.value)}
+                       className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-violet-500 disabled:opacity-50"
+                     >
+-                      <option value="all">객관식 / OX / 주관식 혼합</option>
+-                      <option value="choice">객관식 (4지선다형)</option>
+-                      <option value="ox">OX 진위 판별형</option>
+-                      <option value="short">주관식 단답형</option>
+-                    </select>
+-                  </div>
+ 
+                   {/* Difficulty Selection with multipliers */}
+                   <div>
+@@ -1956,7 +2114,7 @@ JSON 배열 구조 예시:
+                   {feedback.show && (
+                     <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-30 flex flex-col items-center p-4 overflow-y-auto custom-scrollbar space-y-4 rounded-2xl fade-in justify-between">
+                       <div className="w-full flex-1 flex flex-col items-center justify-center space-y-4 min-h-0">
+-                        <div className="wafer-3d-container scale-[0.65] -my-4 shrink-0">
++                        <div className="wafer-3d-container scale-[0.65] -my-4 shrink-0 hidden md:block">
+                           <div className="wafer-3d">
+                             <div className="wafer-grid"></div>
+                             <div className="wafer-notch"></div>
+@@ -1999,7 +2157,7 @@ JSON 배열 구조 예시:
+                         <div className="w-full bg-slate-900/90 border border-slate-800/80 rounded-xl p-3 text-[11px] leading-relaxed text-slate-300 max-h-48 overflow-y-auto custom-scrollbar select-text">
+                           <div className="font-extrabold text-cyan-400 mb-1 flex items-center gap-1 shrink-0">
+                             <i className="fa-solid fa-book-open text-[10px]"></i>
+-                            핵심 해설 학습
++                            해설
+                           </div>
+                           <InteractiveText text={currentQuestion.explanation} onHoverWord={onHoverWord} onLeaveWord={onLeaveWord} />
+                         </div>
+@@ -2116,22 +2274,44 @@ JSON 배열 구조 예시:
+       const [isLoading, setIsLoading] = useState(false);
+       const [isWriting, setIsWriting] = useState(false);
+ 
+-      // Cache nickname loader
++      // Cache nickname loader for posts
+       const [nickname, setNickname] = useState(() => localStorage.getItem('cached_nickname') || '');
+       const [password, setPassword] = useState('');
+       const [title, setTitle] = useState('');
+       const [content, setContent] = useState('');
+ 
++      // State for keeping track of expanded comments & input fields per post/comment
++      const [expandedPosts, setExpandedPosts] = useState({}); // { [postId]: boolean }
++      const [commentInputs, setCommentInputs] = useState({}); // { [postId]: { nickname, password, content } }
++      const [replyingTo, setReplyingTo] = useState(null);     // commentId of parent
++      const [replyInputs, setReplyInputs] = useState({});     // { [commentId]: { nickname, password, content } }
++
+       const fetchPosts = async () => {
+         setIsLoading(true);
+         try {
+-          const { data, error } = await supabase
++          // 1. Fetch Posts
++          const { data: postsData, error: postsError } = await supabase
+             .from('posts')
+             .select('*')
+             .order('created_at', { ascending: false });
+ 
+-          if (error) throw error;
+-          setPosts(data || []);
++          if (postsError) throw postsError;
++
++          // 2. Fetch Comments
++          const { data: commentsData, error: commentsError } = await supabase
++            .from('comments')
++            .select('*')
++            .order('created_at', { ascending: true });
++
++          if (commentsError) throw commentsError;
++
++          // 3. Map comments to their respective posts
++          const mapped = (postsData || []).map(post => ({
++            ...post,
++            comments: (commentsData || []).filter(c => c.post_id === post.id)
++          }));
++
++          setPosts(mapped);
+         } catch(e) {
+           console.error("Supabase 로드 오류:", e.message);
+         } finally {
+@@ -2152,11 +2332,11 @@ JSON 배열 구조 예시:
+         try {
+           const { error } = await supabase
+             .from('posts')
+-            .insert([{ nickname: nickname.trim(), password: password.trim(), title, content }]);
++            .insert([{ nickname: nickname.trim(), password: password.trim(), title, content, likes: 0 }]);
+ 
+           if (error) throw error;
+ 
+-          // Cache nickname to localstorage
++          // Cache nickname
+           localStorage.setItem('cached_nickname', nickname.trim());
+ 
+           setPassword('');
+@@ -2223,7 +2560,7 @@ JSON 배열 구조 예시:
+                 </div>
+                 <div className="grid grid-cols-2 gap-3 text-xs">
+                   <div>
+-                    <label className="block text-[10px] text-slate-500 font-bold mb-1">작성자 닉네임</label>
++                    <label className="block text-[10px] text-slate-55-rgb font-bold mb-1">작성자 닉네임</label>
+                     <input 
+                       type="text" 
+                       placeholder="닉네임"
+@@ -2233,7 +2570,7 @@ JSON 배열 구조 예시:
+                     />
+                   </div>
+                   <div>
+-                    <label className="block text-[10px] text-slate-500 font-bold mb-1">삭제용 비밀번호</label>
++                    <label className="block text-[10px] text-slate-55-rgb font-bold mb-1">삭제용 비밀번호</label>
+                     <input 
+                       type="password" 
+                       placeholder="비밀번호"
+@@ -2245,7 +2582,7 @@ JSON 배열 구조 예시:
+                 </div>
+ 
+                 <div className="text-xs">
+-                  <label className="block text-[10px] text-slate-500 font-bold mb-1">글 제목</label>
++                  <label className="block text-[10px] text-slate-55-rgb font-bold mb-1">글 제목</label>
+                   <input 
+                     type="text" 
+                     placeholder="제목을 입력하세요"
+@@ -2256,7 +2593,7 @@ JSON 배열 구조 예시:
+                 </div>
+ 
+                 <div className="text-xs">
+-                  <label className="block text-[10px] text-slate-500 font-bold mb-1">본문 내용</label>
++                  <label className="block text-[10px] text-slate-55-rgb font-bold mb-1">본문 내용</label>
+                   <textarea 
+                     rows="5"
+                     placeholder="내용을 작성하세요..."
+@@ -2274,7 +2611,7 @@ JSON 배열 구조 예시:
+                 </button>
+               </form>
+             ) : (
+-              <div className="space-y-3 pb-4">
++              <div className="space-y-4 pb-6">
+                 {isLoading ? (
+                   <div className="h-44 flex flex-col items-center justify-center text-slate-500 text-xs gap-2">
+                     <i className="fa-solid fa-spinner fa-spin text-lg text-emerald-400"></i>
+@@ -2286,26 +2623,226 @@ JSON 배열 구조 예시:
+                     <span>자유게시판에 등록된 글이 없습니다.</span>
+                   </div>
+                 ) : (
+-                  posts.map(post => (
+-                    <div key={post.id} className="bg-slate-900/30 border border-slate-800/60 rounded-2xl p-4 space-y-2 relative group hover:border-slate-700 transition-colors">
+-                      <button
+-                        onClick={() => handleDeletePost(post.id, post.password)}
+-                        className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 text-slate-500 hover:text-rose-400 transition-opacity text-xs"
+-                        title="게시글 삭제"
+-                      >
+-                        <i className="fa-solid fa-trash-can"></i>
+-                      </button>
++                  posts.map(post => {
++                    const isLiked = localStorage.getItem(`liked_post_${post.id}`);
++                    const isExpanded = !!expandedPosts[post.id];
++                    const cInputs = commentInputs[post.id] || { nickname: localStorage.getItem('cached_nickname') || '', password: '', content: '' };
++                    
++                    // Filter replies and root comments
++                    const rootComments = post.comments.filter(c => !c.parent_id);
++
++                    return (
++                      <div key={post.id} className="bg-slate-900/30 border border-slate-800/60 rounded-2xl p-4 space-y-3 relative group hover:border-slate-700 transition-colors">
++                        {/* Delete post button */}
++                        <button
++                          onClick={() => handleDeletePost(post.id, post.password)}
++                          className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 text-slate-500 hover:text-rose-400 transition-opacity text-xs"
++                          title="게시글 삭제"
++                        >
++                          <i className="fa-solid fa-trash-can"></i>
++                        </button>
+ 
+-                      <h3 className="text-xs font-bold text-slate-200 pr-8">{post.title}</h3>
+-                      <p className="text-[11px] text-slate-400 leading-relaxed white-space-pre-wrap">{post.content}</p>
+-                      
+-                      <div className="flex items-center gap-2 text-[9px] text-slate-500 font-semibold pt-1 border-t border-slate-900">
+-                        <span className="text-slate-400"><i className="fa-solid fa-user-graduate mr-1"></i>{post.nickname}</span>
+-                        <span>•</span>
+-                        <span>{new Date(post.created_at).toLocaleString('ko-KR', { hour12: false })}</span>
++                        <h3 className="text-xs font-bold text-slate-200 pr-8">{post.title}</h3>
++                        <p className="text-[11px] text-slate-400 leading-relaxed white-space-pre-wrap">{post.content}</p>
++                        
++                        <div className="flex justify-between items-center pt-2 border-t border-slate-900/80">
++                          {/* Left: Author Info */}
++                          <div className="flex items-center gap-2 text-[9px] text-slate-500 font-semibold">
++                            <span className="text-slate-400"><i className="fa-solid fa-user-graduate mr-1"></i>{post.nickname}</span>
++                            <span>•</span>
++                            <span>{new Date(post.created_at).toLocaleString('ko-KR', { hour12: false })}</span>
++                          </div>
++
++                          {/* Right: Likes & Comments Action Buttons */}
++                          <div className="flex items-center gap-3">
++                            {/* Like Button */}
++                            <button
++                              onClick={() => handleLikePost(post.id, post.likes)}
++                              className={`flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all ${
++                                isLiked 
++                                  ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' 
++                                  : 'bg-slate-950/40 border-slate-850 text-slate-400 hover:text-rose-400 hover:border-rose-500/20'
++                              }`}
++                            >
++                              <i className={`fa-solid fa-heart ${isLiked ? 'text-rose-400' : ''}`}></i>
++                              <span>{post.likes || 0}</span>
++                            </button>
++
++                            {/* Comment Accordion Trigger */}
++                            <button
++                              onClick={() => toggleComments(post.id)}
++                              className={`flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all ${
++                                isExpanded
++                                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
++                                  : 'bg-slate-950/40 border-slate-850 text-slate-400 hover:text-emerald-400 hover:border-emerald-500/20'
++                              }`}
++                            >
++                              <i className="fa-solid fa-comments"></i>
++                              <span>{post.comments.length}</span>
++                            </button>
++                          </div>
++                        </div>
++
++                        {/* Collapsible Comments list */}
++                        {isExpanded && (
++                          <div className="mt-3 pt-3 border-t border-slate-900/60 space-y-3.5 fade-in">
++                            {/* Comments Header */}
++                            <h4 className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
++                              <i className="fa-solid fa-comment-dots text-emerald-400"></i>
++                              댓글 ({post.comments.length})
++                            </h4>
++
++                            {/* Comment Write Box */}
++                            <form onSubmit={(e) => handleAddComment(e, post.id)} className="bg-slate-950/50 p-3 border border-slate-850 rounded-xl space-y-2.5">
++                              <div className="grid grid-cols-2 gap-2 text-[10px]">
++                                <input
++                                  type="text"
++                                  placeholder="댓글 작성자"
++                                  value={cInputs.nickname}
++                                  onChange={e => handleCommentInputChange(post.id, 'nickname', e.target.value)}
++                                  className="bg-slate-900 border border-slate-850 rounded-lg px-2.5 py-1 text-slate-200 outline-none focus:border-emerald-500"
++                                />
++                                <input
++                                  type="password"
++                                  placeholder="비밀번호"
++                                  value={cInputs.password || ''}
++                                  onChange={e => handleCommentInputChange(post.id, 'password', e.target.value)}
++                                  className="bg-slate-900 border border-slate-850 rounded-lg px-2.5 py-1 text-slate-200 outline-none focus:border-emerald-500"
++                                />
++                              </div>
++                              <div className="flex gap-2">
++                                <input
++                                  type="text"
++                                  placeholder="댓글 내용을 작성하세요..."
++                                  value={cInputs.content || ''}
++                                  onChange={e => handleCommentInputChange(post.id, 'content', e.target.value)}
++                                  className="flex-1 bg-slate-900 border border-slate-850 rounded-lg px-3 py-1.5 text-[10.5px] text-slate-200 outline-none focus:border-emerald-500"
++                                />
++                                <button
++                                  type="submit"
++                                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg text-[10px] transition-colors"
++                                >
++                                  등록
++                                </button>
++                              </div>
++                            </form>
++
++                            {/* Render Comments List */}
++                            {rootComments.length === 0 ? (
++                              <p className="text-[10px] text-slate-500 italic pl-1">등록된 댓글이 없습니다. 첫 댓글을 남겨보세요!</p>
++                            ) : (
++                              <div className="space-y-3 pl-1">
++                                {rootComments.map(comment => {
++                                  // Fetch replies for this specific comment
++                                  const replies = post.comments.filter(c => c.parent_id === comment.id);
++                                  const rInputs = replyInputs[comment.id] || { nickname: localStorage.getItem('cached_nickname') || '', password: '', content: '' };
++
++                                  return (
++                                    <div key={comment.id} className="space-y-2">
++                                      {/* Parent Comment Card */}
++                                      <div className="bg-slate-950/40 p-2.5 border border-slate-900 rounded-xl space-y-1 relative group/comment">
++                                        {/* Delete Comment Button */}
++                                        <button
++                                          onClick={() => handleDeleteComment(comment.id, comment.password)}
++                                          className="absolute top-2.5 right-2.5 opacity-0 group-hover/comment:opacity-100 text-slate-500 hover:text-rose-400 transition-opacity text-[10px]"
++                                          title="댓글 삭제"
++                                        >
++                                          <i className="fa-solid fa-trash-can"></i>
++                                        </button>
++
++                                        <div className="flex justify-between items-center text-[9px] font-bold text-slate-400">
++                                          <span className="text-emerald-400">{comment.nickname}</span>
++                                          <span className="text-[8px] text-slate-600 pr-5">{new Date(comment.created_at).toLocaleString('ko-KR', { hour12: false })}</span>
++                                        </div>
++                                        <p className="text-[10.5px] text-slate-300 leading-normal">{comment.content}</p>
++
++                                        {/* Reply Trigger Button */}
++                                        <div className="pt-1 text-right">
++                                          <button
++                                            onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
++                                            className="text-[8px] font-black text-slate-500 hover:text-emerald-400 transition-colors uppercase tracking-wider"
++                                          >
++                                            <i className="fa-solid fa-reply mr-1"></i>답글 달기
++                                          </button>
++                                        </div>
++                                      </div>
++
++                                      {/* Sub-reply Input Form (Inline) */}
++                                      {replyingTo === comment.id && (
++                                        <form onSubmit={(e) => handleAddReply(e, post.id, comment.id)} className="ml-6 bg-slate-950/70 p-2.5 border border-violet-500/20 rounded-xl space-y-2 fade-in">
++                                          <div className="text-[8.5px] font-bold text-violet-400 flex items-center gap-1">
++                                            <i className="fa-solid fa-turn-up fa-rotate-90"></i>
++                                            {comment.nickname} 님께 답글 작성
++                                          </div>
++                                          <div className="grid grid-cols-2 gap-2 text-[9px]">
++                                            <input
++                                              type="text"
++                                              placeholder="작성자"
++                                              value={rInputs.nickname}
++                                              onChange={e => handleReplyInputChange(comment.id, 'nickname', e.target.value)}
++                                              className="bg-slate-900 border border-slate-850 rounded-lg px-2 py-0.5 text-slate-200 outline-none focus:border-violet-500"
++                                            />
++                                            <input
++                                              type="password"
++                                              placeholder="비밀번호"
++                                              value={rInputs.password || ''}
++                                              onChange={e => handleReplyInputChange(comment.id, 'password', e.target.value)}
++                                              className="bg-slate-900 border border-slate-850 rounded-lg px-2 py-0.5 text-slate-200 outline-none focus:border-violet-500"
++                                            />
++                                          </div>
++                                          <div className="flex gap-2">
++                                            <input
++                                              type="text"
++                                              placeholder="답글 내용을 입력하세요..."
++                                              value={rInputs.content || ''}
++                                              onChange={e => handleReplyInputChange(comment.id, 'content', e.target.value)}
++                                              className="flex-1 bg-slate-900 border border-slate-850 rounded-lg px-2.5 py-1 text-[9.5px] text-slate-200 outline-none focus:border-violet-500"
++                                            />
++                                            <button
++                                              type="submit"
++                                              className="bg-violet-600 hover:bg-violet-500 text-white font-bold px-2.5 py-1 rounded-lg text-[9px] transition-colors"
++                                            >
++                                              등록
++                                            </button>
++                                          </div>
++                                        </form>
++                                      )}
++
++                                      {/* Nested Replies Rendering */}
++                                      {replies.map(reply => (
++                                        <div key={reply.id} className="ml-6 bg-slate-950/20 p-2.5 border-l-2 border-slate-800 rounded-r-xl space-y-1 relative group/reply flex gap-2">
++                                          {/* Arrow icon */}
++                                          <div className="text-slate-600 pt-0.5 text-[9px]">
++                                            <i className="fa-solid fa-turn-up fa-rotate-90"></i>
++                                          </div>
++                                          <div className="flex-1 space-y-1">
++                                            {/* Delete Reply Button */}
++                                            <button
++                                              onClick={() => handleDeleteComment(reply.id, reply.password)}
++                                              className="absolute top-2.5 right-2.5 opacity-0 group-hover/reply:opacity-100 text-slate-500 hover:text-rose-400 transition-opacity text-[10px]"
++                                              title="답글 삭제"
++                                            >
++                                              <i className="fa-solid fa-trash-can"></i>
++                                            </button>
++
++                                            <div className="flex justify-between items-center text-[9px] font-bold text-slate-400">
++                                              <span className="text-violet-400">{reply.nickname}</span>
++                                              <span className="text-[8px] text-slate-600 pr-5">{new Date(reply.created_at).toLocaleString('ko-KR', { hour12: false })}</span>
++                                            </div>
++                                            <p className="text-[10.5px] text-slate-300 leading-normal">{reply.content}</p>
++                                          </div>
++                                        </div>
++                                      ))}
++                                    </div>
++                                  );
++                                })}
++                              </div>
++                            )}
++                          </div>
++                        )}
+                       </div>
+-                    </div>
+-                  ))
++                    );
++                  })
+                 )}
+               </div>
+             )}
+@@ -2316,7 +2853,158 @@ JSON 배열 구조 예시:
+ 
+     // --- 10. SEMICONDUCTOR HISTORY TIMELINE TAB ---
+     const HistoryTab = ({ onHoverWord, onLeaveWord }) => {
++      const getIconBoxStyle = (colorClass) => {
++        const colorName = (colorClass || '').replace('text-', '').replace('-400', '').trim();
++        switch (colorName) {
++          case 'cyan': return 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.25)]';
++          case 'teal': return 'bg-teal-500/10 border-teal-500/30 text-teal-400 shadow-[0_0_12px_rgba(20,184,166,0.25)]';
++          case 'emerald': return 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.25)]';
++          case 'green': return 'bg-green-500/10 border-green-500/30 text-green-400 shadow-[0_0_12px_rgba(34,197,94,0.25)]';
++          case 'yellow': return 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400 shadow-[0_0_12px_rgba(234,179,8,0.25)]';
++          case 'amber': return 'bg-amber-500/10 border-amber-500/30 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.25)]';
++          case 'orange': return 'bg-orange-500/10 border-orange-500/30 text-orange-400 shadow-[0_0_12px_rgba(249,115,22,0.25)]';
++          case 'red': return 'bg-red-500/10 border-red-500/30 text-red-400 shadow-[0_0_12px_rgba(239,68,68,0.25)]';
++          case 'rose': return 'bg-rose-500/10 border-rose-500/30 text-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.25)]';
++          case 'pink': return 'bg-pink-500/10 border-pink-500/30 text-pink-400 shadow-[0_0_12px_rgba(236,72,153,0.25)]';
++          case 'fuchsia': return 'bg-fuchsia-500/10 border-fuchsia-500/30 text-fuchsia-400 shadow-[0_0_12px_rgba(217,70,239,0.25)]';
++          case 'purple': return 'bg-purple-500/10 border-purple-500/30 text-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.25)]';
++          case 'violet': return 'bg-violet-500/10 border-violet-500/30 text-violet-400 shadow-[0_0_12px_rgba(139,92,246,0.25)]';
++          case 'indigo': return 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.25)]';
++          case 'blue': return 'bg-blue-500/10 border-blue-500/30 text-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.25)]';
++          case 'sky': return 'bg-sky-500/10 border-sky-500/30 text-sky-400 shadow-[0_0_12px_rgba(14,165,233,0.25)]';
++          default: return 'bg-slate-950/60 border-slate-800/80 text-slate-400';
++        }
++      };
++
+       const historyData = [
++        {
++          year: "1947",
++          title: "트랜지스터 발명 (벨 연구소)",
++          desc: "존 바딘, 월터 브래튼, 윌리엄 쇼클리가 점접촉형 게르마늄 트랜지스터를 최초로 발명하며 부피가 크고 부서지기 쉬운 진공관을 대체하고 현대 반도체 공학의 신호탄을 쏘아 올렸습니다.",
++          icon: "fa-toggle-on",
++          color: "text-cyan-400"
++        },
++        {
++          year: "1954",
++          title: "최초의 실리콘 트랜지스터 상용화 (TI)",
++          desc: "텍사스 인스트루먼트(TI)사가 기존 게르마늄 트랜지스터의 고온 열변형 한계를 극복하고, 화학적으로 훨씬 안정적이며 온도 저항성이 높은 고순도 실리콘 트랜지스터 상용화에 성공했습니다.",
++          icon: "fa-cube",
++          color: "text-teal-400"
++        },
++        {
++          year: "1958",
++          title: "집적회로(IC) 최초 개발 (TI)",
++          desc: "텍사스 인스트루먼트의 잭 킬비가 단일 실리콘 조각(기판) 위에 트랜지스터, 저항, 커패시터를 모두 연결한 미세 회로 적층 개념의 집적회로(IC)를 최초 시연하여 마이크로칩 시대를 개막했습니다.",
++          icon: "fa-microchip",
++          color: "text-emerald-400"
++        },
++        {
++          year: "1959",
++          title: "플래너 공정(Planar Process) 발명",
++          desc: "페어차일드 반도체의 장 회니가 이산화규소(SiO₂) 보호막을 표면에 씌우고 사진 식각(Photolithography)과 불순물 확산을 활용해 평면형 집적회로를 만드는 제조 공정을 발명, 현대 반도체 8대 공정의 원형을 정립했습니다.",
++          icon: "fa-border-all",
++          color: "text-green-400"
++        },
++        {
++          year: "1960",
++          title: "MOS-FET 최초 개발 (벨 연구소)",
++          desc: "벨 연구소의 한국인 과학자 강대원 박사와 마틴 아탈라가 전계효과를 활용한 금속-산화물-반도체 트랜지스터(MOSFET)를 최초로 개발하였습니다. 이 소자는 현대 고밀도 디지털 프로세서 및 메모리 반도체의 핵심 근간이 되었습니다.",
++          icon: "fa-bolt",
++          color: "text-yellow-400"
++        },
++        {
++          year: "1965",
++          title: "무어의 법칙 (Moore's Law) 발표",
++          desc: "페어차일드의 고든 무어가 단일 실리콘 마이크로칩에 집적할 수 있는 트랜지스터의 수가 매 18~24개월마다 대략 두 배씩 증가한다는 무어의 법칙을 발표하여 반도체 업계의 로드맵과 기술 개발 이정표를 정립했습니다.",
++          icon: "fa-chart-line",
++          color: "text-amber-400"
++        },
++        {
++          year: "1971",
++          title: "인텔 4004 마이크로프로세서 출시",
++          desc: "인텔이 단일 실리콘 칩 안에 중앙 처리 장치(CPU)의 핵심 연산 및 제어 회로를 집적하는 데 성공한 세계 최초의 상용 4비트 마이크로프로세서 4004를 출시하며 개인 컴퓨터 시대를 앞당겼습니다.",
++          icon: "fa-computer",
++          color: "text-orange-400"
++        },
++        {
++          year: "1978",
++          title: "인텔 8086 프로세서 및 x86 아키텍처의 탄생",
++          desc: "인텔이 16비트 프로세서인 8086을 출시하며 범용 컴퓨팅의 대명사인 x86 명령어 집합 아키텍처(ISA) 시대를 열었고, 이는 IBM PC의 표준 CPU로 선정되어 현대 퍼스널 컴퓨팅의 표준 기틀이 되었습니다.",
++          icon: "fa-hard-drive",
++          color: "text-red-400"
++        },
++        {
++          year: "1983",
++          title: "대한민국 최초 64K D램 독자 개발",
++          desc: "삼성전자가 기흥 팹에서 미국, 일본에 이어 세계에서 세 번째로 64K D램 메모리를 독자 개발하는 데 성공하며 후발 주자였던 대한민국이 글로벌 메모리 시장 초강국으로 도약하는 첫 위대한 발걸음을 뗐습니다.",
++          icon: "fa-flag",
++          color: "text-rose-400"
++        },
++        {
++          year: "1987",
++          title: "글로벌 최초 순수 파운드리 TSMC 설립",
++          desc: "모리스 창이 대만 정부의 지원 속에 설계 부서 없이 위탁 가공 및 제조 생산(Foundry)만을 전문으로 전담하는 비즈니스 모델을 창제하고 TSMC를 설립해, 팹리스와 파운드리의 완벽한 반도체 분업 생태계를 열었습니다.",
++          icon: "fa-industry",
++          color: "text-pink-400"
++        },
++        {
++          year: "1992",
++          title: "삼성전자 세계 최초 64M D램 개발 및 1위 등극",
++          desc: "삼성전자가 글로벌 선두 기업인 도시바, NEC 등을 추월하고 세계 최초로 64M D램 제품을 상용 개발하여 세계 메모리 시장 왕좌에 올랐으며, 이후 30년 이상 이어지는 대한민국 메모리 초격차 리더십의 위상을 다졌습니다.",
++          icon: "fa-trophy",
++          color: "text-fuchsia-400"
++        },
++        {
++          year: "1999",
++          title: "3차원 입체 FinFET 트랜지스터 구조 제안",
++          desc: "UC 버클리의 첸밍 후 교수 연구팀이 2차원 평면(Planar) 트랜지스터의 미세화에 따른 누설 전류 한계(단채널 효과)를 제어하기 위해 물고기 지느러미 형태의 3차원 입체 채널을 가진 FinFET을 학계에 최초 제안했습니다.",
++          icon: "fa-cubes",
++          color: "text-purple-400"
++        },
++        {
++          year: "2005",
++          title: "High-k Metal Gate (HKMG) 공정 기술 도입",
++          desc: "소자 미세화가 가속되며 원자 단위 수준으로 얇아진 게이트 산화막(SiO₂)의 미세 누설 전류를 제어하기 위해, 기존의 폴리실리콘 대신 금속 게이트와 유전율이 극도로 높은 High-k 신소재막을 도입하는 구조적 전환이 일어났습니다.",
++          icon: "fa-circle-nodes",
++          color: "text-violet-400"
++        },
++        {
++          year: "2011",
++          title: "FinFET 최초 양산 적용 (22nm 공정)",
++          desc: "인텔이 Ivy Bridge CPU 라인업에 22나노 공정 기반의 3D Tri-Gate(FinFET) 기술을 최초로 공식 양산 적용함으로써, 게이트 채널 지배력을 극대화하여 나노 공정에서의 물리적 누설 전류 장벽을 넘어섰습니다.",
++          icon: "fa-gears",
++          color: "text-indigo-400"
++        },
++        {
++          year: "2019",
++          title: "EUV (극자외선, 13.5nm) 노광기 공식 양산 도입",
++          desc: "기존 ArF 액침 노광의 멀티 패터닝 물리적 한계를 완전히 돌파하기 위해 파장이 극도로 짧은 13.5nm 극자외선(EUV) 노광 장비를 ASML이 세계 최초로 파운드리 7나노 이하 최첨단 반도체 라인에 정식 양산 적용했습니다.",
++          icon: "fa-wand-magic-sparkles",
++          color: "text-blue-400"
++        },
++        {
++          year: "2020",
++          title: "세계 최초 D램 제조에 EUV 노광 공정 도입",
++          desc: "메모리 1위 리더 기업들이 모바일 D램 생산 라인에 극자외선(EUV) 노광 장비를 세계 최초로 부분 도입해 양산 성공함으로써, 파운드리를 넘어 초미세 메모리 반도체 공정에서도 선폭 축소 한계를 성공적으로 돌파했습니다.",
++          icon: "fa-circle-dot",
++          color: "text-sky-400"
++        },
++        {
++          year: "2022",
++          title: "3나노 GAA (Gate-All-Around) 세계 최초 양산",
++          desc: "채널의 3면만 감싸는 FinFET을 개량해 채널의 4면 전체를 게이트가 둘러싸 물리적 한계점 부근의 전류 흐름을 원천 제어하는 나노시트(MBCFET) 기반 GAA 3나노 공정이 세계 최초로 상용 양산에 성공했습니다.",
++          icon: "fa-atom",
++          color: "text-cyan-400"
++        },
++        {
++          year: "2024~2025",
++          title: "HBM3E / HBM4 및 2nm 백사이드 파워 양산 진입",
++          desc: "AI 고속 학습 및 연산용 칩 성능 극대화를 위한 초고대역폭 메모리(HBM3E 및 HBM4)가 적층 TSV 공정을 타고 폭발 성장했으며, 극미세 소자 전력 신뢰성을 높이기 위해 웨이퍼 뒷면에 전력선을 설계하는 BSPDN 기술이 2나노 공정에 공식 적용되기 시작했습니다.",
++          icon: "fa-database",
++          color: "text-emerald-400"
++        }
++      ];
++      const dummyArr = [
+         {
+           year: "1947",
+           title: "트랜지스터 발명 (벨 연구소)",
+@@ -2689,6 +3377,17 @@ JSON 배열 구조 예시:
+       const [isLoading, setIsLoading] = useState(false);
+       const chatEndRef = useRef(null);
+ 
++      useEffect(() => {
++        if (isOpen) {
++          const userKey = localStorage.getItem('user_gemini_api_key');
++          if (!userKey || !userKey.trim()) {
++            alert("AI 실시간 공정 상담실을 이용하려면 개인 Gemini API 키 등록이 필요합니다. API 키 설정 창을 엽니다.");
++            window.dispatchEvent(new CustomEvent('open-api-key-modal'));
++            setIsOpen(false);
++          }
++        }
++      }, [isOpen]);
++
+       useEffect(() => {
+         if (isOpen) {
+           chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+@@ -2858,6 +4036,16 @@ JSON 배열 구조 예시:
+ 
+       const [theme, setTheme] = useState(() => localStorage.getItem('app_theme') || 'light');
+ 
++      // Auto-open API Key Modal on first mount in this session if not registered
++      useEffect(() => {
++        const userKey = localStorage.getItem('user_gemini_api_key');
++        const hasPrompted = sessionStorage.getItem('api_key_prompted');
++        if (!userKey && !hasPrompted) {
++          setIsApiModalOpen(true);
++          sessionStorage.setItem('api_key_prompted', 'true');
++        }
++      }, []);
++
+       useEffect(() => {
+         document.documentElement.classList.remove('light-mode', 'navy-mode');
+         if (theme === 'light') {
+@@ -3052,6 +4240,10 @@ JSON 구조 예시:
+       // Selection drag-to-explain listener
+       useEffect(() => {
+         const handleMouseUp = () => {
++          if (activeTab === 'community') {
++            setSelectionMenu(prev => prev.isOpen ? { ...prev, isOpen: false } : prev);
++            return;
++          }
+           setTimeout(() => {
+             const selection = window.getSelection();
+             const selectedText = selection.toString().trim();
+@@ -3081,7 +4273,7 @@ JSON 구조 예시:
+         return () => {
+           document.removeEventListener('mouseup', handleMouseUp);
+         };
+-      }, [glossaryCache]);
++      }, [glossaryCache, activeTab]);
+ 
+       const handleSearchSelection = async () => {
+         const word = selectionMenu.text;
+@@ -3126,14 +4318,11 @@ JSON 구조 예시:
+           <aside className="hidden md:flex flex-col w-64 border-r border-slate-900 bg-slate-950/95 backdrop-blur-lg p-5 justify-between z-40 shrink-0 select-none">
+             <div className="space-y-6">
+               {/* Logo / Header */}
+-              <div className="flex flex-col gap-1.5 pb-4 border-b border-slate-900">
+-                <h1 className="text-base font-black text-slate-100 flex items-center gap-1.5">
+-                  <i className="fa-solid fa-microchip text-cyan-400"></i>
+-                  Semiconductor
++              <div className="pb-4 border-b border-slate-900">
++                <h1 className="text-[15px] font-black text-slate-100 flex items-center gap-1 tracking-tighter select-none">
++                  <i className="fa-solid fa-microchip text-cyan-400 shrink-0"></i>
++                  <span>반도체 도와줘! <span className="text-cyan-400 ml-0.5 font-extrabold text-[12px]">(9조)</span></span>
+                 </h1>
+-                <span className="text-cyan-400 text-xs font-semibold px-2.5 py-0.5 rounded bg-cyan-950 border border-cyan-800/40 w-fit">
+-                  AI Academy
+-                </span>
+               </div>
+ 
+               {/* Navigation Tabs */}
+@@ -3221,13 +4410,13 @@ JSON 구조 예시:
+           {/* Right Content Area */}
+           <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden">
+             {/* Header (Mobile Only) */}
+-            <header className="shrink-0 bg-slate-950/80 backdrop-blur-md border-b border-slate-900 py-3 px-4 flex items-center justify-between z-10 md:hidden">
+-              <h1 className="text-base font-black text-slate-100 flex items-center gap-1.5 select-none">
+-                <i className="fa-solid fa-microchip text-cyan-400"></i>
+-                Semiconductor <span className="text-cyan-400 text-xs font-semibold px-2 py-0.5 rounded bg-cyan-950 border border-cyan-800/40">AI Academy</span>
++            <header className="shrink-0 bg-slate-950/80 backdrop-blur-md border-b border-slate-900 py-3 px-4 flex items-center justify-between z-10 md:hidden select-none">
++              <h1 className="text-[13px] font-black text-slate-100 flex items-center gap-1 tracking-tighter">
++                <i className="fa-solid fa-microchip text-cyan-400 shrink-0 text-xs"></i>
++                <span>반도체 도와줘! <span className="text-cyan-400 ml-0.5 font-extrabold text-[10.5px]">(9조)</span></span>
+               </h1>
+               
+-              <div className="flex items-center gap-3">
++              <div className="flex items-center gap-2">
+                 {/* Theme Toggle Button */}
+                 <button
+                   onClick={() => setTheme(prev => {
+@@ -3235,7 +4424,7 @@ JSON 구조 예시:
+                     if (prev === 'light') return 'navy';
+                     return 'dark';
+                   })}
+-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200 transition-colors shrink-0"
++                  className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200 transition-all active:scale-95 shrink-0"
+                   title={
+                     theme === 'dark' ? '라이트 모드로 전환' : 
+                     theme === 'light' ? '딥 네이비 모드로 전환' : 
+@@ -3243,41 +4432,48 @@ JSON 구조 예시:
+                   }
+                 >
+                   <i className={`fa-solid ${
+-                    theme === 'dark' ? 'fa-moon text-indigo-400' : 
+-                    theme === 'light' ? 'fa-sun text-amber-500' : 
+-                    'fa-circle-half-stroke text-cyan-400'
+-                  } text-[10px]`}></i>
+-                  <span className="text-[9.5px] font-bold">
+-                    {theme === 'dark' ? '다크 모드' : theme === 'light' ? '라이트 모드' : '딥 네이비'}
+-                  </span>
++                    theme === 'dark' ? 'fa-moon text-indigo-400 text-sm' : 
++                    theme === 'light' ? 'fa-sun text-amber-500 text-sm' : 
++                    'fa-circle-half-stroke text-cyan-400 text-sm'
++                  }`}></i>
+                 </button>
+ 
+                 {/* API Key Setting Button */}
+                 <button
+                   onClick={() => setIsApiModalOpen(true)}
+-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10.5px] font-bold border transition-colors shrink-0 ${
++                  className={`relative w-9 h-9 flex items-center justify-center rounded-xl border transition-all active:scale-95 shrink-0 ${
+                     customApiKey 
+-                      ? 'bg-emerald-950/40 text-emerald-400 border-emerald-850/60' 
++                      ? 'bg-emerald-950/40 text-emerald-400 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.15)]' 
+                       : 'bg-slate-900 hover:bg-slate-800 text-slate-400 border-slate-800'
+                   }`}
+-                  title="Gemini API Key 설정"
++                  title={customApiKey ? 'Gemini API Key 등록됨 (수정하려면 클릭)' : 'Gemini API Key 설정'}
+                 >
+-                  <i className="fa-solid fa-key"></i>
+-                  <span className="text-[9.5px] font-bold">
+-                    {customApiKey ? 'API 키 등록됨' : 'API 키'}
+-                  </span>
++                  <i className="fa-solid fa-key text-sm"></i>
++                  {customApiKey && (
++                    <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
++                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
++                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
++                    </span>
++                  )}
+                 </button>
+ 
++                {/* PDF Link Button */}
+                 <button 
+                   onClick={() => setIsPdfModalOpen(true)}
+-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10.5px] font-bold border transition-colors ${
++                  className={`relative w-9 h-9 flex items-center justify-center rounded-xl border transition-all active:scale-95 shrink-0 ${
+                     pdfText 
+-                      ? 'bg-cyan-950/40 text-cyan-400 border-cyan-850' 
++                      ? 'bg-cyan-950/40 text-cyan-400 border-cyan-500/30 shadow-[0_0_10px_rgba(6,182,212,0.15)]' 
+                       : 'bg-slate-900 hover:bg-slate-800 text-slate-400 border-slate-800'
+                   }`}
++                  title={pdfText ? '교재 PDF 연동됨 (변경하려면 클릭)' : '교재 PDF 연동'}
+                 >
+-                  <i className="fa-solid fa-paperclip"></i>
+-                  {pdfText ? 'PDF 연동됨' : '교재 PDF 연동'}
++                  <i className="fa-solid fa-paperclip text-sm"></i>
++                  {pdfText && (
++                    <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
++                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
++                      <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
++                    </span>
++                  )}
+                 </button>
+               </div>
+             </header>
+@@ -3319,6 +4515,9 @@ JSON 구조 예시:
+               {activeTab === 'community' && (
+                 <CommunityTab />
+               )}
++              {activeTab === 'fet' && (
++                <FetExplorerTab />
++              )}
+             </main>
+ 
+             {/* Bottom Mobile Navigation Bar */}

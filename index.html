@@ -3,8 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>반도체 도와줘! ⚡ (9조)</title>
+  <title>반도체 도와줘! (9조)</title>
   <meta name="description" content="반도체 8대 공정 학습 가이드, AI 트러블슈팅 챗봇, AI 자동 생성 퀴즈를 제공하는 스마트 교육 서비스">
+  
+  <!-- Three.js & OrbitControls for 3D FET Explorer -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -96,7 +100,8 @@
   <!-- React Mount Point -->
   <div id="root" class="relative z-10 w-full h-full"></div>
 
-  <!-- Inline API Key Modal is defined within the main module block -->
+  <!-- External API Key Modal Component -->
+  <script src="./api-key-modal.js"></script>
 
   <!-- React Script block -->
   <script type="text/babel" data-type="module">
@@ -1193,101 +1198,10 @@
       );
     };
 
-    // --- 4.5 API KEY SETTINGS MODAL COMPONENT ---
-    const ApiKeyModal = ({ isOpen, onClose, onKeySave }) => {
-      if (!isOpen) return null;
-
-      const [inputKey, setInputKey] = useState(() => localStorage.getItem('user_gemini_api_key') || '');
-      const [showKey, setShowKey] = useState(false);
-
-      useEffect(() => {
-        if (isOpen) {
-          setInputKey(localStorage.getItem('user_gemini_api_key') || '');
-        }
-      }, [isOpen]);
-
-      const handleSave = () => {
-        const trimmed = inputKey.trim();
-        if (trimmed) {
-          localStorage.setItem('user_gemini_api_key', trimmed);
-          onKeySave(trimmed);
-          alert("개인 API 키가 안전하게 등록되었습니다.");
-        } else {
-          localStorage.removeItem('user_gemini_api_key');
-          onKeySave('');
-          alert("개인 API 키가 삭제되었습니다. 공용 API 키로 복구됩니다.");
-        }
-        onClose();
-      };
-
-      const handleClear = () => {
-        if (confirm("등록된 API 키를 삭제하시겠습니까?")) {
-          localStorage.removeItem('user_gemini_api_key');
-          setInputKey('');
-          onKeySave('');
-          alert("삭제 완료! 다시 공용 API 키를 순회하여 사용합니다.");
-          onClose();
-        }
-      };
-
-      return (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-sm p-5 shadow-2xl relative fade-in">
-            <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-200">✕</button>
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-slate-100">
-                <i className="fa-solid fa-key text-cyan-400"></i>
-                <h3 className="text-sm font-bold">Google Gemini API 설정</h3>
-              </div>
-              <p className="text-[10px] text-slate-400 leading-relaxed bg-slate-950/60 p-2.5 border border-slate-850 rounded-xl">
-                <strong>💡 개인 API 키 사용 권장</strong><br />
-                여러 사람이 공용 키를 사용할 경우 일일 요청 횟수 제한(Quota Limit)으로 서비스가 일시 중지될 수 있습니다. 개인 키를 등록하면 중단 없이 무제한 사용 가능하며, 키는 <strong>본인의 브라우저 로컬 저장소(LocalStorage)에만 안전하게 보관</strong>되고 절대 외부 서버로 수집되지 않습니다.
-              </p>
-              <div className="space-y-1.5">
-                <label className="block text-[10px] text-slate-400 font-bold">Gemini API Key 입력</label>
-                <div className="relative">
-                  <input
-                    type={showKey ? "text" : "password"}
-                    placeholder="AIzaSy..."
-                    value={inputKey}
-                    onChange={e => setInputKey(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-3 pr-10 py-2.5 text-xs text-slate-100 outline-none focus:border-cyan-500 font-mono"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowKey(!showKey)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs"
-                  >
-                    <i className={`fa-solid ${showKey ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-                  </button>
-                </div>
-              </div>
-              <div className="text-[10px] text-slate-500 leading-normal">
-                키가 없으신가요? <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-cyan-400 font-black hover:underline">Google AI Studio에서 무료 API 키 발급받기 ↗</a> (구글 계정만 있으면 3초 만에 무료 생성 가능)
-              </div>
-              <div className="flex gap-2 pt-2 border-t border-slate-850">
-                {localStorage.getItem('user_gemini_api_key') && (
-                  <button
-                    type="button"
-                    onClick={handleClear}
-                    className="flex-1 py-2 rounded-lg bg-rose-950/30 hover:bg-rose-900/40 text-rose-400 text-xs font-bold border border-rose-950/30 transition-colors"
-                  >
-                    삭제
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  className="flex-[2] py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-extrabold rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5 shadow-lg shadow-cyan-500/15"
-                >
-                  <i className="fa-solid fa-circle-check"></i>
-                  {inputKey.trim() ? 'API 키 등록' : '취소'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
+    // --- 4.5 API KEY SETTINGS MODAL COMPONENT (DYNAMIC WRAPPER) ---
+    const ApiKeyModal = (props) => {
+      if (!window.ApiKeyModal) return null;
+      return <window.ApiKeyModal {...props} />;
     };
 
     // --- 5. ROADMAP TAB ---
@@ -1658,15 +1572,6 @@ JSON 배열 구조 예시:
       };
 
       const handleStartQuiz = () => {
-        if (useAiQuiz) {
-          const userKey = localStorage.getItem('user_gemini_api_key');
-          if (!userKey || !userKey.trim()) {
-            alert("AI 맞춤형 퀴즈를 생성하려면 먼저 개인 Gemini API 키를 등록해야 합니다. API 키 설정 창을 엽니다.");
-            window.dispatchEvent(new CustomEvent('open-api-key-modal'));
-            return;
-          }
-        }
-
         setAnswersChecked(false);
         setUserAnswers({});
         setCurrentIdx(0);
@@ -2215,44 +2120,22 @@ JSON 배열 구조 예시:
       const [isLoading, setIsLoading] = useState(false);
       const [isWriting, setIsWriting] = useState(false);
 
-      // Cache nickname loader for posts
+      // Cache nickname loader
       const [nickname, setNickname] = useState(() => localStorage.getItem('cached_nickname') || '');
       const [password, setPassword] = useState('');
       const [title, setTitle] = useState('');
       const [content, setContent] = useState('');
 
-      // State for keeping track of expanded comments & input fields per post/comment
-      const [expandedPosts, setExpandedPosts] = useState({}); // { [postId]: boolean }
-      const [commentInputs, setCommentInputs] = useState({}); // { [postId]: { nickname, password, content } }
-      const [replyingTo, setReplyingTo] = useState(null);     // commentId of parent
-      const [replyInputs, setReplyInputs] = useState({});     // { [commentId]: { nickname, password, content } }
-
       const fetchPosts = async () => {
         setIsLoading(true);
         try {
-          // 1. Fetch Posts
-          const { data: postsData, error: postsError } = await supabase
+          const { data, error } = await supabase
             .from('posts')
             .select('*')
             .order('created_at', { ascending: false });
 
-          if (postsError) throw postsError;
-
-          // 2. Fetch Comments
-          const { data: commentsData, error: commentsError } = await supabase
-            .from('comments')
-            .select('*')
-            .order('created_at', { ascending: true });
-
-          if (commentsError) throw commentsError;
-
-          // 3. Map comments to their respective posts
-          const mapped = (postsData || []).map(post => ({
-            ...post,
-            comments: (commentsData || []).filter(c => c.post_id === post.id)
-          }));
-
-          setPosts(mapped);
+          if (error) throw error;
+          setPosts(data || []);
         } catch(e) {
           console.error("Supabase 로드 오류:", e.message);
         } finally {
@@ -2273,11 +2156,11 @@ JSON 배열 구조 예시:
         try {
           const { error } = await supabase
             .from('posts')
-            .insert([{ nickname: nickname.trim(), password: password.trim(), title, content, likes: 0 }]);
+            .insert([{ nickname: nickname.trim(), password: password.trim(), title, content }]);
 
           if (error) throw error;
 
-          // Cache nickname
+          // Cache nickname to localstorage
           localStorage.setItem('cached_nickname', nickname.trim());
 
           setPassword('');
@@ -2314,163 +2197,6 @@ JSON 배열 구조 예시:
         }
       };
 
-      // Like / Empathy Post (Toggle Like / Dislike)
-      const handleLikePost = async (postId, currentLikes) => {
-        const likedKey = `liked_post_${postId}`;
-        const hasLiked = !!localStorage.getItem(likedKey);
-        
-        try {
-          const targetLikes = hasLiked 
-            ? Math.max(0, (currentLikes || 0) - 1)
-            : (currentLikes || 0) + 1;
-
-          const { error } = await supabase
-            .from('posts')
-            .update({ likes: targetLikes })
-            .eq('id', postId);
-
-          if (error) throw error;
-
-          if (hasLiked) {
-            localStorage.removeItem(likedKey);
-          } else {
-            localStorage.setItem(likedKey, 'true');
-          }
-          fetchPosts();
-        } catch(e) {
-          alert(`공감 처리 실패: ${e.message}`);
-        }
-      };
-
-      // Toggle comment accordion section
-      const toggleComments = (postId) => {
-        setExpandedPosts(prev => ({
-          ...prev,
-          [postId]: !prev[postId]
-        }));
-      };
-
-      // Handle raw input change for comments
-      const handleCommentInputChange = (postId, field, value) => {
-        setCommentInputs(prev => ({
-          ...prev,
-          [postId]: {
-            ...(prev[postId] || { nickname: localStorage.getItem('cached_nickname') || '', password: '', content: '' }),
-            [field]: value
-          }
-        }));
-      };
-
-      // Add a regular top-level comment
-      const handleAddComment = async (e, postId) => {
-        e.preventDefault();
-        const inputs = commentInputs[postId] || {};
-        const cNick = (inputs.nickname || localStorage.getItem('cached_nickname') || '').trim();
-        const cPass = (inputs.password || '').trim();
-        const cContent = (inputs.content || '').trim();
-
-        if (!cNick || !cPass || !cContent) {
-          return alert("댓글 작성자, 비밀번호, 본문 내용을 모두 채워주세요.");
-        }
-
-        try {
-          const { error } = await supabase
-            .from('comments')
-            .insert([{
-              post_id: postId,
-              parent_id: null,
-              nickname: cNick,
-              password: cPass,
-              content: cContent
-            }]);
-
-          if (error) throw error;
-
-          // Clear content
-          setCommentInputs(prev => ({
-            ...prev,
-            [postId]: { ...prev[postId], content: '', password: '' }
-          }));
-          localStorage.setItem('cached_nickname', cNick);
-          fetchPosts();
-        } catch(e) {
-          alert(`댓글 작성 실패: ${e.message}`);
-        }
-      };
-
-      // Handle raw input change for replies (nested comments)
-      const handleReplyInputChange = (commentId, field, value) => {
-        setReplyInputs(prev => ({
-          ...prev,
-          [commentId]: {
-            ...(prev[commentId] || { nickname: localStorage.getItem('cached_nickname') || '', password: '', content: '' }),
-            [field]: value
-          }
-        }));
-      };
-
-      // Add a nested reply (deep comment)
-      const handleAddReply = async (e, postId, parentId) => {
-        e.preventDefault();
-        const inputs = replyInputs[parentId] || {};
-        const rNick = (inputs.nickname || localStorage.getItem('cached_nickname') || '').trim();
-        const rPass = (inputs.password || '').trim();
-        const rContent = (inputs.content || '').trim();
-
-        if (!rNick || !rPass || !rContent) {
-          return alert("답글 작성자, 비밀번호, 본문 내용을 모두 채워주세요.");
-        }
-
-        try {
-          const { error } = await supabase
-            .from('comments')
-            .insert([{
-              post_id: postId,
-              parent_id: parentId,
-              nickname: rNick,
-              password: rPass,
-              content: rContent
-            }]);
-
-          if (error) throw error;
-
-          // Clear
-          setReplyInputs(prev => ({
-            ...prev,
-            [parentId]: { ...prev[parentId], content: '', password: '' }
-          }));
-          setReplyingTo(null);
-          localStorage.setItem('cached_nickname', rNick);
-          fetchPosts();
-        } catch(e) {
-          alert(`답글 작성 실패: ${e.message}`);
-        }
-      };
-
-      // Delete a comment / reply
-      const handleDeleteComment = async (commentId, commentPassword) => {
-        const inputPassword = prompt("댓글 삭제 비밀번호를 입력하세요:");
-        if (inputPassword === null) return;
-
-        if (inputPassword.trim() !== commentPassword.trim()) {
-          return alert("비밀번호가 일치하지 않습니다.");
-        }
-
-        try {
-          const { error } = await supabase
-            .from('comments')
-            .delete()
-            .eq('id', commentId)
-            .eq('password', inputPassword.trim());
-
-          if (error) throw error;
-          fetchPosts();
-          alert("댓글이 성공적으로 삭제되었습니다.");
-        } catch(e) {
-          alert(`댓글 삭제 오류: ${e.message}`);
-        }
-      };
-
       return (
         <div className="flex flex-col h-full fade-in">
           {/* Header */}
@@ -2501,7 +2227,7 @@ JSON 배열 구조 예시:
                 </div>
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div>
-                    <label className="block text-[10px] text-slate-400 font-bold mb-1">작성자 닉네임</label>
+                    <label className="block text-[10px] text-slate-500 font-bold mb-1">작성자 닉네임</label>
                     <input 
                       type="text" 
                       placeholder="닉네임"
@@ -2511,7 +2237,7 @@ JSON 배열 구조 예시:
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] text-slate-400 font-bold mb-1">삭제용 비밀번호</label>
+                    <label className="block text-[10px] text-slate-500 font-bold mb-1">삭제용 비밀번호</label>
                     <input 
                       type="password" 
                       placeholder="비밀번호"
@@ -2523,7 +2249,7 @@ JSON 배열 구조 예시:
                 </div>
 
                 <div className="text-xs">
-                  <label className="block text-[10px] text-slate-400 font-bold mb-1">글 제목</label>
+                  <label className="block text-[10px] text-slate-500 font-bold mb-1">글 제목</label>
                   <input 
                     type="text" 
                     placeholder="제목을 입력하세요"
@@ -2534,7 +2260,7 @@ JSON 배열 구조 예시:
                 </div>
 
                 <div className="text-xs">
-                  <label className="block text-[10px] text-slate-400 font-bold mb-1">본문 내용</label>
+                  <label className="block text-[10px] text-slate-500 font-bold mb-1">본문 내용</label>
                   <textarea 
                     rows="5"
                     placeholder="내용을 작성하세요..."
@@ -2552,7 +2278,7 @@ JSON 배열 구조 예시:
                 </button>
               </form>
             ) : (
-              <div className="space-y-4 pb-6">
+              <div className="space-y-3 pb-4">
                 {isLoading ? (
                   <div className="h-44 flex flex-col items-center justify-center text-slate-500 text-xs gap-2">
                     <i className="fa-solid fa-spinner fa-spin text-lg text-emerald-400"></i>
@@ -2564,221 +2290,26 @@ JSON 배열 구조 예시:
                     <span>자유게시판에 등록된 글이 없습니다.</span>
                   </div>
                 ) : (
-                  posts.map(post => {
-                    const isLiked = localStorage.getItem(`liked_post_${post.id}`);
-                    const isExpanded = !!expandedPosts[post.id];
-                    const cInputs = commentInputs[post.id] || { nickname: localStorage.getItem('cached_nickname') || '', password: '', content: '' };
-                    
-                    // Filter replies and root comments
-                    const rootComments = post.comments.filter(c => !c.parent_id);
+                  posts.map(post => (
+                    <div key={post.id} className="bg-slate-900/30 border border-slate-800/60 rounded-2xl p-4 space-y-2 relative group hover:border-slate-700 transition-colors">
+                      <button
+                        onClick={() => handleDeletePost(post.id, post.password)}
+                        className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 text-slate-500 hover:text-rose-400 transition-opacity text-xs"
+                        title="게시글 삭제"
+                      >
+                        <i className="fa-solid fa-trash-can"></i>
+                      </button>
 
-                    return (
-                      <div key={post.id} className="bg-slate-900/30 border border-slate-800/60 rounded-2xl p-4 space-y-3 relative group hover:border-slate-700 transition-colors">
-                        {/* Delete Post Button */}
-                        <button
-                          onClick={() => handleDeletePost(post.id, post.password)}
-                          className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 text-slate-500 hover:text-rose-400 transition-opacity text-xs"
-                          title="게시글 삭제"
-                        >
-                          <i className="fa-solid fa-trash-can"></i>
-                        </button>
-
-                        {/* Title & Metadata */}
-                        <div>
-                          <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">
-                            Q&A 토론
-                          </span>
-                          <h3 className="text-sm font-extrabold text-slate-200 mt-1.5 pr-8">{post.title}</h3>
-                        </div>
-
-                        {/* Content */}
-                        <p className="text-[11px] text-slate-300 leading-relaxed whitespace-pre-wrap select-text">{post.content}</p>
-                        
-                        {/* Footer & Actions */}
-                        <div className="flex items-center justify-between text-[9.5px] text-slate-500 pt-2.5 border-t border-slate-900">
-                          <div className="flex items-center gap-2 font-semibold">
-                            <span className="text-slate-400"><i className="fa-solid fa-user-graduate mr-1"></i>{post.nickname}</span>
-                            <span>•</span>
-                            <span>{new Date(post.created_at).toLocaleString('ko-KR', { hour12: false })}</span>
-                          </div>
-                          
-                          <div className="flex items-center gap-3 shrink-0">
-                            {/* Like Button */}
-                            <button
-                              onClick={() => handleLikePost(post.id, post.likes)}
-                              className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all active:scale-95 ${
-                                isLiked 
-                                  ? 'bg-rose-500/10 border-rose-500/30 text-rose-400 hover:bg-rose-500/20' 
-                                  : 'bg-slate-950/40 border-slate-850 text-slate-400 hover:border-rose-500/30 hover:text-rose-400'
-                              }`}
-                            >
-                              <i className={`fa-solid fa-heart ${isLiked ? 'text-rose-500' : ''}`}></i>
-                              <span>공감 {post.likes || 0}</span>
-                            </button>
-
-                            {/* Comment Accordion Button */}
-                            <button
-                              onClick={() => toggleComments(post.id)}
-                              className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all ${
-                                isExpanded 
-                                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
-                                  : 'bg-slate-950/40 border-slate-850 text-slate-400 hover:border-emerald-500/30 hover:text-emerald-400'
-                              }`}
-                            >
-                              <i className="fa-solid fa-comments"></i>
-                              <span>댓글 {post.comments.length}</span>
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Comments Accordion Panel */}
-                        {isExpanded && (
-                          <div className="mt-4 pt-3.5 border-t border-slate-800/80 space-y-4 fade-in" onClick={e => e.stopPropagation()}>
-                            {/* Comments List */}
-                            <div className="space-y-3.5">
-                              {rootComments.length === 0 ? (
-                                <p className="text-[10px] text-slate-500 py-2 text-center">등록된 댓글이 없습니다. 첫 댓글을 남겨보세요!</p>
-                              ) : (
-                                rootComments.map(comment => {
-                                  const replies = post.comments.filter(c => c.parent_id === comment.id);
-                                  const rInputs = replyInputs[comment.id] || { nickname: localStorage.getItem('cached_nickname') || '', password: '', content: '' };
-                                  const isReplying = replyingTo === comment.id;
-
-                                  return (
-                                    <div key={comment.id} className="space-y-2.5">
-                                      {/* Parent Comment */}
-                                      <div className="bg-slate-950/40 border border-slate-850/60 p-3 rounded-xl relative group/comment">
-                                        <button
-                                          onClick={() => handleDeleteComment(comment.id, comment.password)}
-                                          className="absolute top-3 right-3 opacity-0 group-hover/comment:opacity-100 text-slate-500 hover:text-rose-400 transition-opacity text-[10px]"
-                                          title="댓글 삭제"
-                                        >
-                                          <i className="fa-solid fa-trash-can"></i>
-                                        </button>
-
-                                        <div className="flex items-center gap-1.5 text-[9.5px] font-bold text-slate-400 mb-1">
-                                          <span>{comment.nickname}</span>
-                                          <span className="text-[8.5px] text-slate-500 font-medium">({new Date(comment.created_at).toLocaleString('ko-KR', { hour12: false })})</span>
-                                        </div>
-                                        <p className="text-[10.5px] text-slate-300 leading-relaxed whitespace-pre-wrap select-text">{comment.content}</p>
-                                        
-                                        <div className="mt-1.5 flex justify-start">
-                                          <button
-                                            onClick={() => setReplyingTo(isReplying ? null : comment.id)}
-                                            className="text-[9px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors"
-                                          >
-                                            <i className="fa-solid fa-reply fa-rotate-180"></i>
-                                            답글 달기
-                                          </button>
-                                        </div>
-                                      </div>
-
-                                      {/* Replies (Nested Comments) */}
-                                      {replies.map(reply => (
-                                        <div key={reply.id} className="pl-6 flex gap-2.5 items-start">
-                                          <i className="fa-solid fa-reply fa-rotate-180 text-slate-600 mt-1.5 text-xs shrink-0"></i>
-                                          <div className="flex-1 bg-slate-950/60 border border-slate-850/40 p-3 rounded-xl relative group/reply">
-                                            <button
-                                              onClick={() => handleDeleteComment(reply.id, reply.password)}
-                                              className="absolute top-3 right-3 opacity-0 group-hover/reply:opacity-100 text-slate-500 hover:text-rose-400 transition-opacity text-[10px]"
-                                              title="답글 삭제"
-                                            >
-                                              <i className="fa-solid fa-trash-can"></i>
-                                            </button>
-
-                                            <div className="flex items-center gap-1.5 text-[9.5px] font-bold text-slate-400 mb-1">
-                                              <span>{reply.nickname}</span>
-                                              <span className="text-[8.5px] text-slate-500 font-medium">({new Date(reply.created_at).toLocaleString('ko-KR', { hour12: false })})</span>
-                                            </div>
-                                            <p className="text-[10.5px] text-slate-300 leading-relaxed whitespace-pre-wrap select-text">{reply.content}</p>
-                                          </div>
-                                        </div>
-                                      ))}
-
-                                      {/* Reply Input Form */}
-                                      {isReplying && (
-                                        <form onSubmit={(e) => handleAddReply(e, post.id, comment.id)} className="pl-6 flex gap-2.5 items-start fade-in">
-                                          <i className="fa-solid fa-reply fa-rotate-180 text-emerald-500 mt-3 text-xs shrink-0 animate-pulse"></i>
-                                          <div className="flex-1 bg-slate-950/50 border border-emerald-950/40 p-3 rounded-xl space-y-3">
-                                            <div className="grid grid-cols-2 gap-2 text-[9.5px]">
-                                              <input
-                                                type="text"
-                                                placeholder="답글 작성자"
-                                                value={rInputs.nickname}
-                                                onChange={e => handleReplyInputChange(comment.id, 'nickname', e.target.value)}
-                                                className="w-full bg-slate-950 border border-slate-850 rounded-lg px-2.5 py-1 text-slate-100 outline-none focus:border-emerald-500"
-                                              />
-                                              <input
-                                                type="password"
-                                                placeholder="삭제 비밀번호"
-                                                value={rInputs.password}
-                                                onChange={e => handleReplyInputChange(comment.id, 'password', e.target.value)}
-                                                className="w-full bg-slate-950 border border-slate-850 rounded-lg px-2.5 py-1 text-slate-100 outline-none focus:border-emerald-500"
-                                              />
-                                            </div>
-                                            <div className="flex gap-2">
-                                              <input
-                                                type="text"
-                                                placeholder="답글 내용을 입력하세요..."
-                                                value={rInputs.content}
-                                                onChange={e => handleReplyInputChange(comment.id, 'content', e.target.value)}
-                                                className="flex-1 bg-slate-950 border border-slate-850 rounded-lg px-2.5 py-1.5 text-[10px] text-slate-100 outline-none focus:border-emerald-500"
-                                              />
-                                              <button
-                                                type="submit"
-                                                className="px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-[9.5px] transition-colors"
-                                              >
-                                                등록
-                                              </button>
-                                            </div>
-                                          </div>
-                                        </form>
-                                      )}
-                                    </div>
-                                  );
-                                })
-                              )}
-                            </div>
-
-                            {/* Top-level Comment Write Form */}
-                            <form onSubmit={(e) => handleAddComment(e, post.id)} className="bg-slate-950/40 border border-slate-850/60 p-3 rounded-xl space-y-2.5 mt-2">
-                              <div className="grid grid-cols-2 gap-2 text-[10px]">
-                                <input
-                                  type="text"
-                                  placeholder="댓글 작성자"
-                                  value={cInputs.nickname}
-                                  onChange={e => handleCommentInputChange(post.id, 'nickname', e.target.value)}
-                                  className="w-full bg-slate-950 border border-slate-850 rounded-lg px-2.5 py-1 text-slate-100 outline-none focus:border-emerald-500"
-                                />
-                                <input
-                                  type="password"
-                                  placeholder="삭제용 비밀번호"
-                                  value={cInputs.password}
-                                  onChange={e => handleCommentInputChange(post.id, 'password', e.target.value)}
-                                  className="w-full bg-slate-950 border border-slate-850 rounded-lg px-2.5 py-1 text-slate-100 outline-none focus:border-emerald-500"
-                                />
-                              </div>
-                              <div className="flex gap-2">
-                                <input
-                                  type="text"
-                                  placeholder="댓글 내용을 입력하세요..."
-                                  value={cInputs.content}
-                                  onChange={e => handleCommentInputChange(post.id, 'content', e.target.value)}
-                                  className="flex-1 bg-slate-950 border border-slate-850 rounded-lg px-2.5 py-1.5 text-[10.5px] text-slate-100 outline-none focus:border-emerald-500"
-                                />
-                                <button
-                                  type="submit"
-                                  className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded-lg text-[10px] transition-colors"
-                                >
-                                  등록
-                                </button>
-                              </div>
-                            </form>
-                          </div>
-                        )}
+                      <h3 className="text-xs font-bold text-slate-200 pr-8">{post.title}</h3>
+                      <p className="text-[11px] text-slate-400 leading-relaxed white-space-pre-wrap">{post.content}</p>
+                      
+                      <div className="flex items-center gap-2 text-[9px] text-slate-500 font-semibold pt-1 border-t border-slate-900">
+                        <span className="text-slate-400"><i className="fa-solid fa-user-graduate mr-1"></i>{post.nickname}</span>
+                        <span>•</span>
+                        <span>{new Date(post.created_at).toLocaleString('ko-KR', { hour12: false })}</span>
                       </div>
-                    );
-                  })
+                    </div>
+                  ))
                 )}
               </div>
             )}
@@ -2786,160 +2317,81 @@ JSON 배열 구조 예시:
         </div>
       );
     };
-        // --- 10. SEMICONDUCTOR HISTORY TIMELINE TAB ---
-    const HistoryTab = ({ onHoverWord, onLeaveWord }) => {
-      const getIconBoxStyle = (colorClass) => {
-        const colorName = (colorClass || '').replace('text-', '').replace('-400', '').trim();
-        switch (colorName) {
-          case 'cyan': return 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.25)]';
-          case 'teal': return 'bg-teal-500/10 border-teal-500/30 text-teal-400 shadow-[0_0_12px_rgba(20,184,166,0.25)]';
-          case 'emerald': return 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.25)]';
-          case 'green': return 'bg-green-500/10 border-green-500/30 text-green-400 shadow-[0_0_12px_rgba(34,197,94,0.25)]';
-          case 'yellow': return 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400 shadow-[0_0_12px_rgba(234,179,8,0.25)]';
-          case 'amber': return 'bg-amber-500/10 border-amber-500/30 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.25)]';
-          case 'orange': return 'bg-orange-500/10 border-orange-500/30 text-orange-400 shadow-[0_0_12px_rgba(249,115,22,0.25)]';
-          case 'red': return 'bg-red-500/10 border-red-500/30 text-red-400 shadow-[0_0_12px_rgba(239,68,68,0.25)]';
-          case 'rose': return 'bg-rose-500/10 border-rose-500/30 text-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.25)]';
-          case 'pink': return 'bg-pink-500/10 border-pink-500/30 text-pink-400 shadow-[0_0_12px_rgba(236,72,153,0.25)]';
-          case 'fuchsia': return 'bg-fuchsia-500/10 border-fuchsia-500/30 text-fuchsia-400 shadow-[0_0_12px_rgba(217,70,239,0.25)]';
-          case 'purple': return 'bg-purple-500/10 border-purple-500/30 text-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.25)]';
-          case 'violet': return 'bg-violet-500/10 border-violet-500/30 text-violet-400 shadow-[0_0_12px_rgba(139,92,246,0.25)]';
-          case 'indigo': return 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.25)]';
-          case 'blue': return 'bg-blue-500/10 border-blue-500/30 text-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.25)]';
-          case 'sky': return 'bg-sky-500/10 border-sky-500/30 text-sky-400 shadow-[0_0_12px_rgba(14,165,233,0.25)]';
-          default: return 'bg-slate-950/60 border-slate-800/80 text-slate-400';
-        }
-      };
 
+    // --- 10. SEMICONDUCTOR HISTORY TIMELINE TAB ---
+    const HistoryTab = ({ onHoverWord, onLeaveWord }) => {
       const historyData = [
         {
           year: "1947",
           title: "트랜지스터 발명 (벨 연구소)",
-          desc: "존 바딘, 월터 브래튼, 윌리엄 쇼클리가 점접촉형 게르마늄 트랜지스터를 최초로 발명하며 부피가 크고 부서지기 쉬운 진공관을 대체하고 현대 반도체 공학의 신호탄을 쏘아 올렸습니다.",
+          desc: "존 바딘, 월터 브래튼, 윌리엄 쇼클리가 점접촉형 트랜지스터를 최초로 발명하며 진공관을 대체하고 현대 반도체 공학의 신호탄을 쏘아 올렸습니다.",
           icon: "fa-toggle-on",
-          color: "text-cyan-400"
-        },
-        {
-          year: "1954",
-          title: "최초의 실리콘 트랜지스터 상용화 (TI)",
-          desc: "텍사스 인스트루먼트(TI)사가 기존 게르마늄 트랜지스터의 고온 열변형 한계를 극복하고, 화학적으로 훨씬 안정적이며 온도 저항성이 높은 고순도 실리콘 트랜지스터 상용화에 성공했습니다.",
-          icon: "fa-cube",
-          color: "text-teal-400"
+          color: "border-cyan-500 text-cyan-400 shadow-cyan-500/20"
         },
         {
           year: "1958",
-          title: "집적회로(IC) 최초 개발 (TI)",
-          desc: "텍사스 인스트루먼트의 잭 킬비가 단일 실리콘 조각(기판) 위에 트랜지스터, 저항, 커패시터를 모두 연결한 미세 회로 적층 개념의 집적회로(IC)를 최초 시연하여 마이크로칩 시대를 개막했습니다.",
+          title: "집적회로(IC) 개발",
+          desc: "텍사스 인스트루먼트의 잭 킬비가 하나의 실리콘 기판 위에 트랜지스터, 저항, 캐패시터를 모두 올린 집적회로(IC)를 최초로 시연하며 마이크로칩 시대를 열었습니다.",
           icon: "fa-microchip",
-          color: "text-emerald-400"
-        },
-        {
-          year: "1959",
-          title: "플래너 공정(Planar Process) 발명",
-          desc: "페어차일드 반도체의 장 회니가 이산화규소(SiO₂) 보호막을 표면에 씌우고 사진 식각(Photolithography)과 불순물 확산을 활용해 평면형 집적회로를 만드는 제조 공정을 발명, 현대 반도체 8대 공정의 원형을 정립했습니다.",
-          icon: "fa-border-all",
-          color: "text-green-400"
+          color: "border-teal-500 text-teal-400 shadow-teal-500/20"
         },
         {
           year: "1960",
-          title: "MOS-FET 최초 개발 (벨 연구소)",
-          desc: "벨 연구소의 한국인 과학자 강대원 박사와 마틴 아탈라가 전계효과를 활용한 금속-산화물-반도체 트랜지스터(MOSFET)를 최초로 개발하였습니다. 이 소자는 현대 고밀도 디지털 프로세서 및 메모리 반도체의 핵심 근간이 되었습니다.",
+          title: "MOS-FET 최초 개발",
+          desc: "벨 연구소의 강대원 박사와 마틴 아탈라가 금속-산화물-반도체 전계효과 트랜지스터(MOSFET)를 최초로 개발하였습니다. 이는 현대 고집적 LSI 및 디지털 프로세서의 가장 핵심 소자가 되었습니다.",
           icon: "fa-bolt",
-          color: "text-yellow-400"
+          color: "border-emerald-500 text-emerald-400 shadow-emerald-500/20"
         },
         {
           year: "1965",
-          title: "무어의 법칙 (Moore's Law) 발표",
-          desc: "페어차일드의 고든 무어가 단일 실리콘 마이크로칩에 집적할 수 있는 트랜지스터의 수가 매 18~24개월마다 대략 두 배씩 증가한다는 무어의 법칙을 발표하여 반도체 업계의 로드맵과 기술 개발 이정표를 정립했습니다.",
+          title: "무어의 법칙 (Moore's Law)",
+          desc: "페어차일드 반도체의 고든 무어가 마이크로칩에 집적되는 트랜지스터 수가 매 18~24개월마다 배로 증가한다는 무어의 법칙을 발표하여 업계 기술 지표를 정립했습니다.",
           icon: "fa-chart-line",
-          color: "text-amber-400"
+          color: "border-blue-500 text-blue-400 shadow-blue-500/20"
         },
         {
           year: "1971",
-          title: "인텔 4004 마이크로프로세서 출시",
-          desc: "인텔이 단일 실리콘 칩 안에 중앙 처리 장치(CPU)의 핵심 연산 및 제어 회로를 집적하는 데 성공한 세계 최초의 상용 4비트 마이크로프로세서 4004를 출시하며 개인 컴퓨터 시대를 앞당겼습니다.",
+          title: "인텔 4004 마이크로프로세서",
+          desc: "인텔이 단일 칩에 CPU 기능을 집적한 세계 최초의 상용 마이크로프로세서인 4004를 출시하며 개인용 컴퓨터(PC) 및 정보통신 대중화의 근간을 마련했습니다.",
           icon: "fa-computer",
-          color: "text-orange-400"
-        },
-        {
-          year: "1978",
-          title: "인텔 8086 프로세서 및 x86 아키텍처의 탄생",
-          desc: "인텔이 16비트 프로세서인 8086을 출시하며 범용 컴퓨팅의 대명사인 x86 명령어 집합 아키텍처(ISA) 시대를 열었고, 이는 IBM PC의 표준 CPU로 선정되어 현대 퍼스널 컴퓨팅의 표준 기틀이 되었습니다.",
-          icon: "fa-hard-drive",
-          color: "text-red-400"
+          color: "border-indigo-500 text-indigo-400 shadow-indigo-500/20"
         },
         {
           year: "1983",
-          title: "대한민국 최초 64K D램 독자 개발",
-          desc: "삼성전자가 기흥 팹에서 미국, 일본에 이어 세계에서 세 번째로 64K D램 메모리를 독자 개발하는 데 성공하며 후발 주자였던 대한민국이 글로벌 메모리 시장 초강국으로 도약하는 첫 위대한 발걸음을 뗐습니다.",
+          title: "대한민국 최초 64K D램 개발",
+          desc: "삼성전자가 세계에서 3번째로 64K D램 메모리를 독자 개발하는 데 성공하며, 후발 주자였던 대한민국이 글로벌 반도체 초강국으로 도약하는 역사적 첫 발을 떼었습니다.",
           icon: "fa-flag",
-          color: "text-rose-400"
-        },
-        {
-          year: "1987",
-          title: "글로벌 최초 순수 파운드리 TSMC 설립",
-          desc: "모리스 창이 대만 정부의 지원 속에 설계 부서 없이 위탁 가공 및 제조 생산(Foundry)만을 전문으로 전담하는 비즈니스 모델을 창제하고 TSMC를 설립해, 팹리스와 파운드리의 완벽한 반도체 분업 생태계를 열었습니다.",
-          icon: "fa-industry",
-          color: "text-pink-400"
-        },
-        {
-          year: "1992",
-          title: "삼성전자 세계 최초 64M D램 개발 및 1위 등극",
-          desc: "삼성전자가 글로벌 선두 기업인 도시바, NEC 등을 추월하고 세계 최초로 64M D램 제품을 상용 개발하여 세계 메모리 시장 왕좌에 올랐으며, 이후 30년 이상 이어지는 대한민국 메모리 초격차 리더십의 위상을 다졌습니다.",
-          icon: "fa-trophy",
-          color: "text-fuchsia-400"
+          color: "border-violet-500 text-violet-400 shadow-violet-500/20"
         },
         {
           year: "1999",
-          title: "3차원 입체 FinFET 트랜지스터 구조 제안",
-          desc: "UC 버클리의 첸밍 후 교수 연구팀이 2차원 평면(Planar) 트랜지스터의 미세화에 따른 누설 전류 한계(단채널 효과)를 제어하기 위해 물고기 지느러미 형태의 3차원 입체 채널을 가진 FinFET을 학계에 최초 제안했습니다.",
+          title: "FinFET (3D 트랜지스터) 제안",
+          desc: "UC 버클리의 첸밍 후 교수 연구팀이 평면 트랜지스터의 미세화 한계(단채널 효과)를 물리적으로 극복하기 위해 물고기 지느러미 형태의 3차원 입체 채널을 가진 FinFET 구조를 학계에 최초 제안했습니다.",
           icon: "fa-cubes",
-          color: "text-purple-400"
-        },
-        {
-          year: "2005",
-          title: "High-k Metal Gate (HKMG) 공정 기술 도입",
-          desc: "소자 미세화가 가속되며 원자 단위 수준으로 얇아진 게이트 산화막(SiO₂)의 미세 누설 전류를 제어하기 위해, 기존의 폴리실리콘 대신 금속 게이트와 유전율이 극도로 높은 High-k 신소재막을 도입하는 구조적 전환이 일어났습니다.",
-          icon: "fa-circle-nodes",
-          color: "text-violet-400"
+          color: "border-purple-500 text-purple-400 shadow-purple-500/20"
         },
         {
           year: "2011",
-          title: "FinFET 최초 양산 적용 (22nm 공정)",
-          desc: "인텔이 Ivy Bridge CPU 라인업에 22나노 공정 기반의 3D Tri-Gate(FinFET) 기술을 최초로 공식 양산 적용함으로써, 게이트 채널 지배력을 극대화하여 나노 공정에서의 물리적 누설 전류 장벽을 넘어섰습니다.",
-          icon: "fa-gears",
-          color: "text-indigo-400"
+          title: "FinFET 최초 양산 적용 (22nm)",
+          desc: "인텔이 Ivy Bridge CPU 라인업에 22nm 공정 기반 Tri-Gate(FinFET) 기술을 최초로 상용 양산 도입하며, 나노 공정에서의 누설 전류 차단 한계를 넘겼습니다.",
+          icon: "fa-industry",
+          color: "border-fuchsia-500 text-fuchsia-400 shadow-fuchsia-500/20"
         },
         {
           year: "2019",
-          title: "EUV (극자외선, 13.5nm) 노광기 공식 양산 도입",
-          desc: "기존 ArF 액침 노광의 멀티 패터닝 물리적 한계를 완전히 돌파하기 위해 파장이 극도로 짧은 13.5nm 극자외선(EUV) 노광 장비를 ASML이 세계 최초로 파운드리 7나노 이하 최첨단 반도체 라인에 정식 양산 적용했습니다.",
+          title: "EUV (극자외선) 양산 도입",
+          desc: "기존 ArF 액침 노광의 물리적 패터닝 한계를 뛰어넘어 13.5nm 파장의 극자외선(EUV) 노광 공정이 7나노급 초미세 반도체 생산 라인에 공식 적용되어 ASML 스캐너 양산 시대를 열었습니다.",
           icon: "fa-wand-magic-sparkles",
-          color: "text-blue-400"
-        },
-        {
-          year: "2020",
-          title: "세계 최초 D램 제조에 EUV 노광 공정 도입",
-          desc: "메모리 1위 리더 기업들이 모바일 D램 생산 라인에 극자외선(EUV) 노광 장비를 세계 최초로 부분 도입해 양산 성공함으로써, 파운드리를 넘어 초미세 메모리 반도체 공정에서도 선폭 축소 한계를 성공적으로 돌파했습니다.",
-          icon: "fa-circle-dot",
-          color: "text-sky-400"
+          color: "border-pink-500 text-pink-400 shadow-pink-500/20"
         },
         {
           year: "2022",
-          title: "3나노 GAA (Gate-All-Around) 세계 최초 양산",
-          desc: "채널의 3면만 감싸는 FinFET을 개량해 채널의 4면 전체를 게이트가 둘러싸 물리적 한계점 부근의 전류 흐름을 원천 제어하는 나노시트(MBCFET) 기반 GAA 3나노 공정이 세계 최초로 상용 양산에 성공했습니다.",
+          title: "3nm GAA (Gate-All-Around)",
+          desc: "채널의 4면을 게이트가 감싸 전류 누설을 원천 차단하는 나노시트(MBCFET) 기반 GAA(Gate-All-Around) 3나노 공정이 세계 최초로 양산에 성공하여 반도체 구조적 혁신을 이룩했습니다.",
           icon: "fa-atom",
-          color: "text-cyan-400"
-        },
-        {
-          year: "2024~2025",
-          title: "HBM3E / HBM4 및 2nm 백사이드 파워 양산 진입",
-          desc: "AI 고속 학습 및 연산용 칩 성능 극대화를 위한 초고대역폭 메모리(HBM3E 및 HBM4)가 적층 TSV 공정을 타고 폭발 성장했으며, 극미세 소자 전력 신뢰성을 높이기 위해 웨이퍼 뒷면에 전력선을 설계하는 BSPDN 기술이 2나노 공정에 공식 적용되기 시작했습니다.",
-          icon: "fa-database",
-          color: "text-emerald-400"
+          color: "border-amber-500 text-amber-400 shadow-amber-500/20"
         }
       ];
-
 
       return (
         <div className="flex flex-col h-full fade-in">
@@ -2949,29 +2401,33 @@ JSON 배열 구조 예시:
               <span className="w-2.5 h-4 bg-amber-500 rounded-full"></span>
               반도체 혁신 역사 연표
             </h2>
-            <p className="text-[11px] text-slate-400">트랜지스터의 탄생부터 최첨단 HBM 및 GAA 공정까지의 마일스톤</p>
+            <p className="text-[11px] text-slate-400">트랜지스터의 탄생부터 최첨단 GAA 공정까지의 마일스톤</p>
           </div>
 
           {/* Timeline Scroll Box */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar px-4 pb-6 relative">
-            <div className="space-y-5">
+          <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 pb-4 relative">
+            {/* The vertical neon line */}
+            <div className="absolute left-6 top-3 bottom-6 w-0.5 bg-gradient-to-b from-cyan-500 via-violet-500 to-amber-500 shadow-[0_0_10px_rgba(139,92,246,0.3)]"></div>
+
+            <div className="space-y-6 relative">
               {historyData.map((item, index) => (
-                <div key={index} className="bg-slate-900/40 hover:bg-slate-900/70 border border-slate-800/80 hover:border-slate-700/60 p-6 rounded-3xl transition-all duration-300 flex flex-col gap-4 shadow-sm hover:shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
-                  <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-900/80">
-                    <div className="flex items-center gap-3.5">
-                      {/* 8대공정 스타일의 rounded-xl 글래스모피즘 아이콘 박스 */}
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center border backdrop-blur-md transition-all duration-300 ${getIconBoxStyle(item.color)}`}>
-                        <i className={`fa-solid ${item.icon} text-sm`}></i>
-                      </div>
-                      <div>
-                        <h3 className="text-xs font-extrabold text-slate-200 tracking-tight">{item.title}</h3>
-                        <span className="text-[9px] font-black uppercase tracking-widest text-amber-500 mt-0.5 block">{item.year}년</span>
-                      </div>
-                    </div>
+                <div key={index} className="flex gap-4 items-start group">
+                  {/* Timeline dot / icon */}
+                  <div className={`w-12 h-12 rounded-full border bg-slate-950 flex items-center justify-center shrink-0 z-10 transition-all duration-300 group-hover:scale-110 shadow-[0_0_15px_transparent] group-hover:shadow-current ${item.color}`}>
+                    <i className={`fa-solid ${item.icon} text-base`}></i>
                   </div>
-                  <p className="text-[10.5px] leading-relaxed text-slate-400 select-text px-1">
-                    <InteractiveText text={item.desc} onHoverWord={onHoverWord} onLeaveWord={onLeaveWord} />
-                  </p>
+
+                  {/* Milestone Card */}
+                  <div className="flex-1 bg-slate-900/40 hover:bg-slate-900/70 border border-slate-800/80 hover:border-slate-700/60 p-4 rounded-2xl transition-all duration-300">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">{item.year}년</span>
+                      <span className="w-2 h-2 rounded-full bg-slate-800 group-hover:bg-amber-400 transition-colors"></span>
+                    </div>
+                    <h3 className="text-xs font-bold text-slate-200 mb-2">{item.title}</h3>
+                    <p className="text-[10.5px] leading-relaxed text-slate-400 select-text">
+                      <InteractiveText text={item.desc} onHoverWord={onHoverWord} onLeaveWord={onLeaveWord} />
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -3239,17 +2695,6 @@ JSON 배열 구조 예시:
 
       useEffect(() => {
         if (isOpen) {
-          const userKey = localStorage.getItem('user_gemini_api_key');
-          if (!userKey || !userKey.trim()) {
-            alert("AI 실시간 공정 상담실을 이용하려면 개인 Gemini API 키 등록이 필요합니다. API 키 설정 창을 엽니다.");
-            window.dispatchEvent(new CustomEvent('open-api-key-modal'));
-            setIsOpen(false);
-          }
-        }
-      }, [isOpen]);
-
-      useEffect(() => {
-        if (isOpen) {
           chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         }
       }, [messages, isOpen]);
@@ -3410,22 +2855,500 @@ JSON 배열 구조 예시:
       );
     };
 
+
+    // --- 8.5 3D FET EXPLORER TAB COMPONENT ---
+    const FetExplorerTab = () => {
+      const [baseline, setBaseline] = React.useState('gaafet');
+      const [numVariants, setNumVariants] = React.useState(50);
+      const [structures, setStructures] = React.useState([]);
+      const [selectedId, setSelectedId] = React.useState(null);
+      const [isGenerating, setIsGenerating] = React.useState(false);
+      
+      const [isThreeLoaded, setIsThreeLoaded] = React.useState(!!(window.THREE && window.THREE.OrbitControls));
+      
+      const canvasRef = React.useRef(null);
+      const viewerState = React.useRef({ scene: null, camera: null, renderer: null, controls: null, currentGroup: null });
+
+      React.useEffect(() => {
+        if (isThreeLoaded) return;
+        const checkThree = () => {
+          if (window.THREE && window.THREE.OrbitControls) {
+            setIsThreeLoaded(true);
+          } else {
+            setTimeout(checkThree, 50);
+          }
+        };
+        checkThree();
+      }, [isThreeLoaded]);
+
+      const formatPercent = (val) => {
+        const pct = ((val - 1.0) * 100).toFixed(1);
+        if (pct > 0) return '+' + pct + '%';
+        return pct + '%';
+      };
+
+      const getValClass = (val, isGoodHigh) => {
+        if (val > 1.05) return isGoodHigh ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold';
+        if (val < 0.95) return isGoodHigh ? 'text-rose-400 font-bold' : 'text-emerald-400 font-bold';
+        return 'text-slate-400';
+      };
+
+      const runGeneration = () => {
+        setIsGenerating(true);
+        setTimeout(() => {
+          try {
+            const data = localGenerateStructures(baseline, numVariants);
+            setStructures(data);
+            if (data.length > 0) {
+              setSelectedId(data[0].id);
+            }
+          } catch (err) {
+            console.error(err);
+            alert("구조 생성 실패");
+          } finally {
+            setIsGenerating(false);
+          }
+        }, 150);
+      };
+
+      React.useEffect(() => {
+        if (!isThreeLoaded || !canvasRef.current) return;
+        const container = canvasRef.current;
+        const THREE = window.THREE;
+        const OrbitControls = THREE.OrbitControls;
+
+        const scene = new THREE.Scene();
+        const aspect = (container.clientWidth / container.clientHeight) || 1.0;
+        const camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 1000);
+        camera.position.set(20, 20, 30);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio || 1);
+        container.innerHTML = '';
+        container.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight1.position.set(10, 20, 10);
+        scene.add(dirLight1);
+
+        const dirLight2 = new THREE.DirectionalLight(0xaabbff, 0.5);
+        dirLight2.position.set(-10, 10, -10);
+        scene.add(dirLight2);
+
+        viewerState.current = { scene, camera, renderer, controls, currentGroup: null };
+
+        const handleResize = () => {
+          if (!container || !camera || !renderer) return;
+          camera.aspect = (container.clientWidth / container.clientHeight) || 1.0;
+          camera.updateProjectionMatrix();
+          renderer.setSize(container.clientWidth, container.clientHeight);
+        };
+        window.addEventListener('resize', handleResize);
+
+        let animId;
+        const animate = () => {
+          animId = requestAnimationFrame(animate);
+          controls.update();
+          renderer.render(scene, camera);
+        };
+        animate();
+
+        return () => {
+          cancelAnimationFrame(animId);
+          window.removeEventListener('resize', handleResize);
+          if (renderer) {
+            renderer.dispose();
+          }
+        };
+      }, [isThreeLoaded]);
+
+      const selectedItem = structures.find(s => s.id === selectedId);
+      React.useEffect(() => {
+        if (!isThreeLoaded || !selectedItem || !viewerState.current.scene) return;
+        const { scene, camera, controls } = viewerState.current;
+        const THREE = window.THREE;
+
+        if (viewerState.current.currentGroup) {
+          scene.remove(viewerState.current.currentGroup);
+        }
+
+        const currentGroup = new THREE.Group();
+
+        const substrateMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.8 });
+        const oxideMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.6, roughness: 0.2 });
+        const channelMat = new THREE.MeshStandardMaterial({ color: 0x3b82f6, metalness: 0.3, roughness: 0.4 });
+        const gateMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.8, roughness: 0.2 });
+        const sdMat = new THREE.MeshStandardMaterial({ color: 0x10b981, metalness: 0.5, roughness: 0.5 });
+        const thermalMat = new THREE.MeshStandardMaterial({ color: 0xef4444, metalness: 0.2, roughness: 0.8 });
+
+        const substrateGeo = new THREE.BoxGeometry(20, 2, 10);
+        const substrate = new THREE.Mesh(substrateGeo, substrateMat);
+        substrate.position.y = -1;
+        currentGroup.add(substrate);
+
+        const lg = Math.max(4, Math.min(10, selectedItem.gateLength / 2));
+        const w = 4;
+
+        if (selectedItem.type === 'mosfet') {
+          const sdGeo = new THREE.BoxGeometry(4, 1, 10);
+          const source = new THREE.Mesh(sdGeo, sdMat);
+          source.position.set(-6, 0.5, 0);
+          const drain = new THREE.Mesh(sdGeo, sdMat);
+          drain.position.set(6, 0.5, 0);
+          currentGroup.add(source, drain);
+
+          const channelGeo = new THREE.BoxGeometry(8, 0.2, 10);
+          const channel = new THREE.Mesh(channelGeo, channelMat);
+          channel.position.set(0, 0.1, 0);
+          currentGroup.add(channel);
+
+          const oxGeo = new THREE.BoxGeometry(lg, 0.5, 10);
+          const ox = new THREE.Mesh(oxGeo, oxideMat);
+          ox.position.set(0, 0.45, 0);
+          currentGroup.add(ox);
+
+          const gateGeo = new THREE.BoxGeometry(lg, 2, 10);
+          const gate = new THREE.Mesh(gateGeo, gateMat);
+          gate.position.set(0, 1.7, 0);
+          currentGroup.add(gate);
+
+        } else if (selectedItem.type === 'finfet') {
+          const fins = selectedItem.sheets;
+          const finSpacing = 2.5;
+          const totalWidth = (fins - 1) * finSpacing;
+          const startZ = -totalWidth / 2;
+
+          for(let i=0; i<fins; i++) {
+            const z = startZ + i * finSpacing;
+            const finGeo = new THREE.BoxGeometry(16, 4, 1);
+            const fin = new THREE.Mesh(finGeo, channelMat);
+            fin.position.set(0, 2, z);
+            currentGroup.add(fin);
+
+            const sdExtGeo = new THREE.BoxGeometry(4, 4.2, 1.2);
+            const source = new THREE.Mesh(sdExtGeo, sdMat);
+            source.position.set(-6, 2.1, z);
+            const drain = new THREE.Mesh(sdExtGeo, sdMat);
+            drain.position.set(6, 2.1, z);
+            currentGroup.add(source, drain);
+          }
+
+          const gateWidth = lg;
+          const gateHeight = 5;
+          const gateDepth = totalWidth + 3;
+
+          const gateGeo = new THREE.BoxGeometry(gateWidth, gateHeight, gateDepth);
+          const gate = new THREE.Mesh(gateGeo, gateMat);
+          gate.position.set(0, 2.5, 0);
+
+          const oxGeo = new THREE.BoxGeometry(gateWidth + 0.4, gateHeight + 0.4, gateDepth + 0.4);
+          const ox = new THREE.Mesh(oxGeo, oxideMat);
+          ox.position.set(0, 2.5, 0);
+
+          currentGroup.add(ox, gate);
+
+        } else if (selectedItem.type === 'gaafet') {
+          const sheets = selectedItem.sheets;
+          const sheetSpacing = selectedItem.sheetSpacing / 2;
+          const sheetThickness = selectedItem.sheetThickness / 4;
+
+          const sdGeo = new THREE.BoxGeometry(4, 6, 8);
+          const source = new THREE.Mesh(sdGeo, sdMat);
+          source.position.set(-6, 3, 0);
+          const drain = new THREE.Mesh(sdGeo, sdMat);
+          drain.position.set(6, 3, 0);
+          currentGroup.add(source, drain);
+
+          for(let i=0; i<sheets; i++) {
+            const y = 1 + i * (sheetThickness + sheetSpacing);
+            const sheetGeo = new THREE.BoxGeometry(8, sheetThickness, w);
+            const sheet = new THREE.Mesh(sheetGeo, channelMat);
+            sheet.position.set(0, y, 0);
+            currentGroup.add(sheet);
+          }
+
+          const gateGeo = new THREE.BoxGeometry(lg, 6, w + 2);
+          const gate = new THREE.Mesh(gateGeo, gateMat);
+          gate.position.set(0, 3, 0);
+          currentGroup.add(gate);
+        }
+
+        if (selectedItem.hasThermalLayer) {
+          const thermalGeo = new THREE.BoxGeometry(20, 0.5, 10);
+          const thermal = new THREE.Mesh(thermalGeo, thermalMat);
+          thermal.position.set(0, -2.25, 0);
+          currentGroup.add(thermal);
+        }
+
+        scene.add(currentGroup);
+        viewerState.current.currentGroup = currentGroup;
+
+        camera.position.set(15, 15, 20);
+        controls.target.set(0, 2, 0);
+        controls.update();
+      }, [isThreeLoaded, selectedId, structures]);
+
+      const localGenerateStructures = (baselineKey, count) => {
+        const BASELINES = {
+          finfet: { name: 'FinFET', Ion: 1.0, Ioff: 1.0, deltaT: 1.0, Rsd: 1.0, sheets: 1, type: 'finfet' },
+          mosfet: { name: 'MOSFET', Ion: 0.8, Ioff: 1.2, deltaT: 0.8, Rsd: 1.1, sheets: 1, type: 'mosfet' },
+          gaafet: { name: 'GAAFET', Ion: 1.2, Ioff: 0.6, deltaT: 1.2, Rsd: 0.9, sheets: 3, type: 'gaafet' }
+        };
+        const baseline = BASELINES[baselineKey];
+        const results = [];
+        let attempts = 0;
+        const MAX_ATTEMPTS = count * 100;
+
+        const randRange = (min, max) => Math.random() * (max - min) + min;
+        const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+        const CONSTRAINTS = {
+          maxSheetThickness: 8,
+          minGateLength: 10,
+          minSheetSpacing: 4,
+          maxDeltaT: 1.5
+        };
+
+        while (results.length < count && attempts < MAX_ATTEMPTS) {
+          attempts++;
+          const type = ['finfet', 'mosfet', 'gaafet'][randInt(0, 2)];
+          const sheets = type === 'mosfet' ? 1 : randInt(1, 5);
+          const sheetThickness = randRange(3, 10);
+          const sheetSpacing = type === 'gaafet' ? randRange(2, 8) : 0;
+          const gateLength = randRange(8, 20);
+          const tox = randRange(0.5, 2.5);
+          const hasThermalLayer = Math.random() > 0.5;
+
+          if (sheetThickness > CONSTRAINTS.maxSheetThickness) continue;
+          if (gateLength < CONSTRAINTS.minGateLength) continue;
+          if (type === 'gaafet' && sheetSpacing < CONSTRAINTS.minSheetSpacing) continue;
+
+          let rawIon = 0, rawIoff = 0, rawDeltaT = 0, rawRsd = 0;
+          if (type === 'gaafet') {
+            rawIon = 1.1 * sheets * (1 / tox) * (gateLength / 12);
+            rawIoff = 0.5 * Math.exp(tox - 1.5) / sheets;
+            rawRsd = 0.8 + (0.1 * sheets);
+            rawDeltaT = 1.1 + (0.15 * sheets);
+          } else if (type === 'finfet') {
+            rawIon = 1.0 * sheets * (1 / tox) * (gateLength / 14);
+            rawIoff = 0.8 * Math.exp(tox - 1.5) / sheets;
+            rawRsd = 1.0 + (0.05 * sheets);
+            rawDeltaT = 1.0 + (0.1 * sheets);
+          } else {
+            rawIon = 0.7 * (1 / tox) * (gateLength / 16);
+            rawIoff = 1.5 * Math.exp(tox - 1.0);
+            rawRsd = 1.2;
+            rawDeltaT = 0.8;
+          }
+
+          if (hasThermalLayer) {
+            rawDeltaT *= 0.7;
+            rawRsd *= 1.1;
+          }
+          rawIon *= (10 / gateLength);
+          rawIoff *= (15 / gateLength);
+
+          const processVariationPenalty = type === 'gaafet' && sheets > 3 ? 0.95 : 1.0;
+          rawIon *= processVariationPenalty;
+
+          rawIon = Math.max(0.1, rawIon);
+          rawIoff = Math.max(0.01, rawIoff);
+
+          if (rawDeltaT > CONSTRAINTS.maxDeltaT) continue;
+
+          const normIon = rawIon / baseline.Ion;
+          const normIoff = rawIoff / baseline.Ioff;
+          const normDeltaT = rawDeltaT / baseline.deltaT;
+          const normRsd = rawRsd / baseline.Rsd;
+          const ionIoffRatio = normIon / normIoff;
+
+          const processSteps = type === 'gaafet' ? 5 + sheets : (type === 'finfet' ? 4 : 2);
+          const complexityPenalty = processSteps * 0.1;
+          const score = (ionIoffRatio * 2.0) - (normDeltaT * 1.5) - (normRsd * 1.0) - complexityPenalty;
+
+          let summary = `${type.toUpperCase()} with `;
+          if (type !== 'mosfet') summary += `${sheets} sheets (${sheetThickness.toFixed(1)}nm), `;
+          summary += `Lg=${gateLength.toFixed(1)}nm`;
+          if (hasThermalLayer) summary += ` + Thermal Layer`;
+
+          let cause = [];
+          if (hasThermalLayer) cause.push("Thermal layer reduced ΔT.");
+          if (type === 'gaafet' && sheets > baseline.sheets) cause.push("Increased sheet count boosted Ion.");
+          if (tox < 1.0) cause.push("Thin oxide improved control but may impact Ioff.");
+          if (gateLength < 12) cause.push("Short gate increased Ion but degraded Ioff.");
+
+          results.push({
+            id: Math.random().toString(36).substr(2, 9),
+            type,
+            sheets,
+            sheetThickness,
+            sheetSpacing,
+            gateLength,
+            tox,
+            hasThermalLayer,
+            metrics: {
+              Ion: normIon,
+              Ioff: normIoff,
+              IonIoff: ionIoffRatio,
+              deltaT: normDeltaT,
+              Rsd: normRsd
+            },
+            score,
+            summary,
+            cause: cause.join(" ") || "Standard variation."
+          });
+        }
+        results.sort((a, b) => b.score - a.score);
+        return results;
+      };
+
+      return (
+        <div className="w-full flex flex-col space-y-4 md:h-full md:flex-row md:space-y-0 md:space-x-4 min-h-0 select-none">
+          {/* Controls Panel */}
+          <div className="md:w-60 shrink-0 bg-slate-950/60 border border-slate-900 rounded-3xl p-5 flex flex-col space-y-4 shadow-xl backdrop-blur-md">
+            <div>
+              <h2 className="text-sm font-extrabold text-slate-100 flex items-center gap-1.5 mb-1.5">
+                <i className="fa-solid fa-gears text-indigo-400"></i>
+                3D FET 설정 조율
+              </h2>
+              <p className="text-[10px] text-slate-400 leading-normal">반도체 트랜지스터(FinFET, MOSFET, GAAFET)의 제약 난수 생성 실험실입니다.</p>
+            </div>
+            
+            <div className="space-y-3.5 pt-2 border-t border-slate-900">
+              <div>
+                <label className="block text-[10px] text-slate-400 font-extrabold uppercase tracking-wide mb-1.5">기준 아키텍처 (Baseline)</label>
+                <select
+                  value={baseline}
+                  onChange={e => setBaseline(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-500"
+                >
+                  <option value="finfet">FinFET (1.0x)</option>
+                  <option value="mosfet">Planar MOSFET (0.8x)</option>
+                  <option value="gaafet">GAAFET (1.2x)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-slate-400 font-extrabold uppercase tracking-wide mb-1.5">생성 변이 수 (Variants)</label>
+                <input
+                  type="number"
+                  min="10"
+                  max="1000"
+                  value={numVariants}
+                  onChange={e => setNumVariants(Math.max(10, Math.min(1000, parseInt(e.target.value) || 10)))}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-500 font-mono"
+                />
+              </div>
+
+              <button
+                onClick={runGeneration}
+                disabled={isGenerating}
+                className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs transition-colors flex items-center justify-center gap-1.5 active:scale-[0.98] disabled:opacity-50"
+              >
+                <i className="fa-solid fa-wand-magic-sparkles text-xs"></i>
+                {isGenerating ? '구조 생성 중...' : '임의 구조 생성'}
+              </button>
+            </div>
+          </div>
+
+          {/* Results and 3D View Panel */}
+          <div className="flex-1 flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 min-h-0">
+            {/* Table Panel - Shrunk visually */}
+            <div className="flex-1 md:max-w-[480px] bg-slate-950/60 border border-slate-900 rounded-3xl p-5 flex flex-col min-h-[250px] md:min-h-0 shadow-xl backdrop-blur-md">
+              <h2 className="text-sm font-extrabold text-slate-100 flex items-center gap-1.5 mb-3 shrink-0">
+                <i className="fa-solid fa-table-list text-indigo-400"></i>
+                생성된 소자 리스트
+              </h2>
+              
+              <div className="flex-1 overflow-auto custom-scrollbar border border-slate-900 rounded-2xl bg-slate-950/20">
+                <table className="w-full text-left border-collapse text-[10px]">
+                  <thead className="bg-slate-950/80 sticky top-0 z-10 border-b border-slate-900">
+                    <tr>
+                      <th className="py-2 px-2.5 text-slate-400 font-extrabold">구조 요약</th>
+                      <th className="py-2 px-2.5 text-slate-400 font-extrabold">품질 점수</th>
+                      <th className="py-2 px-2.5 text-slate-400 font-extrabold">Ion/Ioff</th>
+                      <th className="py-2 px-2.5 text-slate-400 font-extrabold">Ion</th>
+                      <th className="py-2 px-2.5 text-slate-400 font-extrabold">Ioff</th>
+                      <th className="py-2 px-2.5 text-slate-400 font-extrabold">ΔT (발열)</th>
+                      <th className="py-2 px-2.5 text-slate-400 font-extrabold">Rsd (기생저항)</th>
+                      <th className="py-2 px-2.5 text-slate-400 font-extrabold">변동 원인</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {structures.map((item) => (
+                      <tr
+                        key={item.id}
+                        onClick={() => setSelectedId(item.id)}
+                        className={`border-b border-slate-900/60 cursor-pointer transition-colors hover:bg-slate-900/20 ${item.id === selectedId ? 'bg-indigo-500/10' : ''}`}
+                      >
+                        <td className="py-2 px-2.5 font-semibold text-slate-200">{item.summary}</td>
+                        <td className="py-2 px-2.5 font-mono font-bold text-indigo-400">{item.score.toFixed(2)}</td>
+                        <td className="py-2 px-2.5"><span className="font-mono">{item.metrics.IonIoff.toFixed(2)} ({formatPercent(item.metrics.IonIoff)})</span></td>
+                        <td className="py-2 px-2.5"><span className="font-mono">{item.metrics.Ion.toFixed(2)} ({formatPercent(item.metrics.Ion)})</span></td>
+                        <td className="py-2 px-2.5"><span className="font-mono">{item.metrics.Ioff.toFixed(2)} ({formatPercent(item.metrics.Ioff)})</span></td>
+                        <td className="py-2 px-2.5"><span className="font-mono">{item.metrics.deltaT.toFixed(2)} ({formatPercent(item.metrics.deltaT)})</span></td>
+                        <td className="py-2 px-2.5"><span className="font-mono">{item.metrics.Rsd.toFixed(2)} ({formatPercent(item.metrics.Rsd)})</span></td>
+                        <td className="py-2 px-2.5 text-slate-500 max-w-[120px] truncate" title={item.cause}>{item.cause}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* 3D Viewer Panel - Expanded dynamically */}
+            <div className="flex-1 md:w-[480px] shrink-0 bg-slate-950/60 border border-slate-900 rounded-3xl p-5 flex flex-col space-y-4 shadow-xl backdrop-blur-md min-h-[350px] md:min-h-0">
+              <h2 className="text-sm font-extrabold text-slate-100 flex items-center gap-1.5 shrink-0">
+                <i className="fa-solid fa-cube text-indigo-400"></i>
+                3D 인터랙티브 뷰
+              </h2>
+              
+              <div className="flex-1 relative border border-slate-900 rounded-2xl overflow-hidden bg-slate-950/40 flex flex-col justify-end min-h-0">
+                <div ref={canvasRef} className="absolute inset-0 z-0"></div>
+                
+                {!selectedId && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center z-10 bg-slate-950/80">
+                    <i className="fa-solid fa-hand-pointer text-xl text-slate-600 mb-2"></i>
+                    <p className="text-[10px] text-slate-400">테이블에서 구조를 선택하면 3D 모델이 렌더링됩니다. 드래그하여 회전, 휠로 줌인/아웃이 가능합니다.</p>
+                  </div>
+                )}
+                
+                {selectedItem && (
+                  <div className="relative z-10 m-2.5 p-3 rounded-xl bg-slate-950/90 border border-slate-900 shadow-lg text-[10px] text-slate-300 space-y-1.5 backdrop-blur-sm max-h-[140px] overflow-y-auto custom-scrollbar select-text shrink-0">
+                    <div className="font-extrabold text-indigo-400 border-b border-slate-900 pb-1 flex justify-between items-center">
+                      <span>소자 상세 스펙</span>
+                      <span className="text-[8px] px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">{selectedItem.type.toUpperCase()}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+                      <div><span className="text-slate-500">채널 핀/시트 수:</span> <span className="font-bold font-mono text-slate-300">{selectedItem.sheets}개</span></div>
+                      <div><span className="text-slate-500">게이트 길이(Lg):</span> <span className="font-bold font-mono text-slate-300">{selectedItem.gateLength.toFixed(1)} nm</span></div>
+                      <div><span className="text-slate-500">시트 두께:</span> <span className="font-bold font-mono text-slate-300">{selectedItem.sheetThickness.toFixed(1)} nm</span></div>
+                      <div><span className="text-slate-500">유효 절연막 두께:</span> <span className="font-bold font-mono text-slate-300">{selectedItem.tox.toFixed(2)} nm</span></div>
+                      <div className="col-span-2"><span className="text-slate-500">방열 레이어 연동:</span> <span className="font-bold">{selectedItem.hasThermalLayer ? '연동됨 (Yes)' : '없음 (No)'}</span></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
     // --- 9. MAIN APP CONTAINER ---
     const App = () => {
       const [activeTab, setActiveTab] = useState('roadmap');
       const [pdfText, setPdfText] = useState("");
 
       const [theme, setTheme] = useState(() => localStorage.getItem('app_theme') || 'light');
-
-      // Auto-open API Key Modal on first mount in this session if not registered
-      useEffect(() => {
-        const userKey = localStorage.getItem('user_gemini_api_key');
-        const hasPrompted = sessionStorage.getItem('api_key_prompted');
-        if (!userKey && !hasPrompted) {
-          setIsApiModalOpen(true);
-          sessionStorage.setItem('api_key_prompted', 'true');
-        }
-      }, []);
 
       useEffect(() => {
         document.documentElement.classList.remove('light-mode', 'navy-mode');
@@ -3621,10 +3544,6 @@ JSON 구조 예시:
       // Selection drag-to-explain listener
       useEffect(() => {
         const handleMouseUp = () => {
-          if (activeTab === 'community') {
-            setSelectionMenu(prev => prev.isOpen ? { ...prev, isOpen: false } : prev);
-            return;
-          }
           setTimeout(() => {
             const selection = window.getSelection();
             const selectedText = selection.toString().trim();
@@ -3654,7 +3573,7 @@ JSON 구조 예시:
         return () => {
           document.removeEventListener('mouseup', handleMouseUp);
         };
-      }, [glossaryCache, activeTab]);
+      }, [glossaryCache]);
 
       const handleSearchSelection = async () => {
         const word = selectionMenu.text;
@@ -3699,11 +3618,14 @@ JSON 구조 예시:
           <aside className="hidden md:flex flex-col w-64 border-r border-slate-900 bg-slate-950/95 backdrop-blur-lg p-5 justify-between z-40 shrink-0 select-none">
             <div className="space-y-6">
               {/* Logo / Header */}
-              <div className="pb-4 border-b border-slate-900">
-                <h1 className="text-[15px] font-black text-slate-100 flex items-center gap-1 tracking-tighter select-none">
-                  <i className="fa-solid fa-microchip text-cyan-400 shrink-0"></i>
-                  <span>반도체 도와줘! <span className="text-cyan-400 ml-0.5 font-extrabold text-[12px]">(9조)</span></span>
+              <div className="flex flex-col gap-1.5 pb-4 border-b border-slate-900">
+                <h1 className="text-base font-black text-slate-100 flex items-center gap-1.5">
+                  <i className="fa-solid fa-microchip text-cyan-400"></i>
+                  반도체 도와줘!
                 </h1>
+                <span className="text-cyan-400 text-xs font-semibold px-2.5 py-0.5 rounded bg-cyan-950 border border-cyan-800/40 w-fit">
+                  9조
+                </span>
               </div>
 
               {/* Navigation Tabs */}
@@ -3713,7 +3635,8 @@ JSON 구조 예시:
                   { id: 'history', label: '공정 역사 연표', icon: 'fa-timeline', color: 'text-amber-400', activeBg: 'bg-amber-500/10 border-amber-500/30' },
                   { id: 'quiz', label: '핵심 퀴즈 스테이션', icon: 'fa-award', color: 'text-violet-400', activeBg: 'bg-violet-500/10 border-violet-500/30' },
                   { id: 'news', label: '데일리 브리핑', icon: 'fa-newspaper', color: 'text-rose-400', activeBg: 'bg-rose-500/10 border-rose-500/30' },
-                  { id: 'community', label: '자유 게시판', icon: 'fa-clipboard-list', color: 'text-emerald-400', activeBg: 'bg-emerald-500/10 border-emerald-500/30' }
+                  { id: 'community', label: '자유 게시판', icon: 'fa-clipboard-list', color: 'text-emerald-400', activeBg: 'bg-emerald-500/10 border-emerald-500/30' },
+                  { id: 'fet', label: '3D FET 탐색기', icon: 'fa-cube', color: 'text-indigo-400', activeBg: 'bg-indigo-500/10 border-indigo-500/30' }
                 ].map(tab => {
                   const isActive = activeTab === tab.id;
                   return (
@@ -3791,21 +3714,21 @@ JSON 구조 예시:
           {/* Right Content Area */}
           <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden">
             {/* Header (Mobile Only) */}
-            <header className="shrink-0 bg-slate-950/80 backdrop-blur-md border-b border-slate-900 py-3 px-4 flex items-center justify-between z-10 md:hidden select-none">
-              <h1 className="text-[13px] font-black text-slate-100 flex items-center gap-1 tracking-tighter">
-                <i className="fa-solid fa-microchip text-cyan-400 shrink-0 text-xs"></i>
-                <span>반도체 도와줘! <span className="text-cyan-400 ml-0.5 font-extrabold text-[10.5px]">(9조)</span></span>
+            <header className="shrink-0 bg-slate-950/80 backdrop-blur-md border-b border-slate-900 py-3 px-4 flex items-center justify-between z-10 md:hidden">
+              <h1 className="text-base font-black text-slate-100 flex items-center gap-1.5 select-none">
+                <i className="fa-solid fa-microchip text-cyan-400"></i>
+                반도체 도와줘! <span className="text-cyan-400 text-xs font-semibold px-2 py-0.5 rounded bg-cyan-950 border border-cyan-800/40">9조</span>
               </h1>
               
               <div className="flex items-center gap-2">
-                {/* Theme Toggle Button */}
+                {/* Theme Toggle Button - Icon Only */}
                 <button
                   onClick={() => setTheme(prev => {
                     if (prev === 'dark') return 'light';
                     if (prev === 'light') return 'navy';
                     return 'dark';
                   })}
-                  className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200 transition-all active:scale-95 shrink-0"
+                  className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200 transition-all shrink-0 active:scale-95"
                   title={
                     theme === 'dark' ? '라이트 모드로 전환' : 
                     theme === 'light' ? '딥 네이비 모드로 전환' : 
@@ -3813,47 +3736,41 @@ JSON 구조 예시:
                   }
                 >
                   <i className={`fa-solid ${
-                    theme === 'dark' ? 'fa-moon text-indigo-400 text-sm' : 
-                    theme === 'light' ? 'fa-sun text-amber-500 text-sm' : 
-                    'fa-circle-half-stroke text-cyan-400 text-sm'
-                  }`}></i>
+                    theme === 'dark' ? 'fa-moon text-indigo-400' : 
+                    theme === 'light' ? 'fa-sun text-amber-500' : 
+                    'fa-circle-half-stroke text-cyan-400'
+                  } text-xs`}></i>
                 </button>
 
-                {/* API Key Setting Button */}
+                {/* API Key Setting Button - Icon Only with LED Dot */}
                 <button
                   onClick={() => setIsApiModalOpen(true)}
-                  className={`relative w-9 h-9 flex items-center justify-center rounded-xl border transition-all active:scale-95 shrink-0 ${
+                  className={`w-8 h-8 flex items-center justify-center rounded-xl border transition-all shrink-0 active:scale-95 relative ${
                     customApiKey 
-                      ? 'bg-emerald-950/40 text-emerald-400 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.15)]' 
-                      : 'bg-slate-900 hover:bg-slate-800 text-slate-400 border-slate-800'
+                      ? 'bg-emerald-950/20 text-emerald-400 border-emerald-800/60' 
+                      : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700'
                   }`}
-                  title={customApiKey ? 'Gemini API Key 등록됨 (수정하려면 클릭)' : 'Gemini API Key 설정'}
+                  title="Gemini API Key 설정"
                 >
-                  <i className="fa-solid fa-key text-sm"></i>
+                  <i className="fa-solid fa-key text-xs"></i>
                   {customApiKey && (
-                    <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                    </span>
+                    <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-emerald-400 rounded-full shadow-[0_0_6px_#34d399] animate-pulse"></span>
                   )}
                 </button>
 
-                {/* PDF Link Button */}
+                {/* PDF Attachment Button - Icon Only with LED Dot */}
                 <button 
                   onClick={() => setIsPdfModalOpen(true)}
-                  className={`relative w-9 h-9 flex items-center justify-center rounded-xl border transition-all active:scale-95 shrink-0 ${
+                  className={`w-8 h-8 flex items-center justify-center rounded-xl border transition-all shrink-0 active:scale-95 relative ${
                     pdfText 
-                      ? 'bg-cyan-950/40 text-cyan-400 border-cyan-500/30 shadow-[0_0_10px_rgba(6,182,212,0.15)]' 
-                      : 'bg-slate-900 hover:bg-slate-800 text-slate-400 border-slate-800'
+                      ? 'bg-cyan-950/20 text-cyan-455 border-cyan-800/60' 
+                      : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700'
                   }`}
-                  title={pdfText ? '교재 PDF 연동됨 (변경하려면 클릭)' : '교재 PDF 연동'}
+                  title="교재 PDF 연동"
                 >
-                  <i className="fa-solid fa-paperclip text-sm"></i>
+                  <i className="fa-solid fa-paperclip text-xs"></i>
                   {pdfText && (
-                    <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
-                    </span>
+                    <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-cyan-400 rounded-full shadow-[0_0_6px_#22d3ee] animate-pulse"></span>
                   )}
                 </button>
               </div>
@@ -3895,6 +3812,9 @@ JSON 구조 예시:
               )}
               {activeTab === 'community' && (
                 <CommunityTab />
+              )}
+              {activeTab === 'fet' && (
+                <FetExplorerTab />
               )}
             </main>
 

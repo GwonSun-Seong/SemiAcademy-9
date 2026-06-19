@@ -1,6 +1,6 @@
 {
-  "name": "Semiconductor AI Academy",
-  "short_name": "Semi AI",
+  "name": "반도체 도와줘! (9조)",
+  "short_name": "반도체 도와줘!",
   "description": "반도체 8대 공정 학습 가이드, AI 트러블슈팅 챗봇, AI 자동 생성 퀴즈를 제공하는 스마트 교육 서비스",
   "start_url": "./index.html",
   "display": "standalone",
