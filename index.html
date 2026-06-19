@@ -2314,25 +2314,31 @@ JSON 배열 구조 예시:
         }
       };
 
-      // Like / Empathy Post
+      // Like / Empathy Post (Toggle Like / Dislike)
       const handleLikePost = async (postId, currentLikes) => {
         const likedKey = `liked_post_${postId}`;
-        if (localStorage.getItem(likedKey)) {
-          alert("이미 공감한 게시글입니다.");
-          return;
-        }
-
+        const hasLiked = !!localStorage.getItem(likedKey);
+        
         try {
+          const targetLikes = hasLiked 
+            ? Math.max(0, (currentLikes || 0) - 1)
+            : (currentLikes || 0) + 1;
+
           const { error } = await supabase
             .from('posts')
-            .update({ likes: (currentLikes || 0) + 1 })
+            .update({ likes: targetLikes })
             .eq('id', postId);
 
           if (error) throw error;
-          localStorage.setItem(likedKey, 'true');
+
+          if (hasLiked) {
+            localStorage.removeItem(likedKey);
+          } else {
+            localStorage.setItem(likedKey, 'true');
+          }
           fetchPosts();
         } catch(e) {
-          alert(`공감 반영 실패: ${e.message}`);
+          alert(`공감 처리 실패: ${e.message}`);
         }
       };
 
@@ -2600,9 +2606,9 @@ JSON 배열 구조 예시:
                             {/* Like Button */}
                             <button
                               onClick={() => handleLikePost(post.id, post.likes)}
-                              className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all ${
+                              className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all active:scale-95 ${
                                 isLiked 
-                                  ? 'bg-rose-500/10 border-rose-500/30 text-rose-400 cursor-not-allowed' 
+                                  ? 'bg-rose-500/10 border-rose-500/30 text-rose-400 hover:bg-rose-500/20' 
                                   : 'bg-slate-950/40 border-slate-850 text-slate-400 hover:border-rose-500/30 hover:text-rose-400'
                               }`}
                             >
@@ -3694,9 +3700,9 @@ JSON 구조 예시:
             <div className="space-y-6">
               {/* Logo / Header */}
               <div className="pb-4 border-b border-slate-900">
-                <h1 className="text-base font-black text-slate-100 flex items-center gap-1.5 tracking-tight select-none">
-                  <i className="fa-solid fa-microchip text-cyan-400"></i>
-                  <span>반도체 도와줘! <span className="text-cyan-400 ml-1 font-extrabold text-[13px]">(9조)</span></span>
+                <h1 className="text-[15px] font-black text-slate-100 flex items-center gap-1 tracking-tighter select-none">
+                  <i className="fa-solid fa-microchip text-cyan-400 shrink-0"></i>
+                  <span>반도체 도와줘! <span className="text-cyan-400 ml-0.5 font-extrabold text-[12px]">(9조)</span></span>
                 </h1>
               </div>
 
@@ -3786,12 +3792,12 @@ JSON 구조 예시:
           <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden">
             {/* Header (Mobile Only) */}
             <header className="shrink-0 bg-slate-950/80 backdrop-blur-md border-b border-slate-900 py-3 px-4 flex items-center justify-between z-10 md:hidden select-none">
-              <h1 className="text-sm font-black text-slate-100 flex items-center gap-1.5">
-                <i className="fa-solid fa-microchip text-cyan-400"></i>
-                <span>반도체 도와줘! <span className="text-cyan-400 ml-1 font-extrabold text-xs">(9조)</span></span>
+              <h1 className="text-[13px] font-black text-slate-100 flex items-center gap-1 tracking-tighter">
+                <i className="fa-solid fa-microchip text-cyan-400 shrink-0 text-xs"></i>
+                <span>반도체 도와줘! <span className="text-cyan-400 ml-0.5 font-extrabold text-[10.5px]">(9조)</span></span>
               </h1>
               
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 {/* Theme Toggle Button */}
                 <button
                   onClick={() => setTheme(prev => {
@@ -3799,7 +3805,7 @@ JSON 구조 예시:
                     if (prev === 'light') return 'navy';
                     return 'dark';
                   })}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200 transition-colors shrink-0"
+                  className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200 transition-all active:scale-95 shrink-0"
                   title={
                     theme === 'dark' ? '라이트 모드로 전환' : 
                     theme === 'light' ? '딥 네이비 모드로 전환' : 
@@ -3807,41 +3813,48 @@ JSON 구조 예시:
                   }
                 >
                   <i className={`fa-solid ${
-                    theme === 'dark' ? 'fa-moon text-indigo-400' : 
-                    theme === 'light' ? 'fa-sun text-amber-500' : 
-                    'fa-circle-half-stroke text-cyan-400'
-                  } text-[10px]`}></i>
-                  <span className="text-[9.5px] font-bold">
-                    {theme === 'dark' ? '다크 모드' : theme === 'light' ? '라이트 모드' : '딥 네이비'}
-                  </span>
+                    theme === 'dark' ? 'fa-moon text-indigo-400 text-sm' : 
+                    theme === 'light' ? 'fa-sun text-amber-500 text-sm' : 
+                    'fa-circle-half-stroke text-cyan-400 text-sm'
+                  }`}></i>
                 </button>
 
                 {/* API Key Setting Button */}
                 <button
                   onClick={() => setIsApiModalOpen(true)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10.5px] font-bold border transition-colors shrink-0 ${
+                  className={`relative w-9 h-9 flex items-center justify-center rounded-xl border transition-all active:scale-95 shrink-0 ${
                     customApiKey 
-                      ? 'bg-emerald-950/40 text-emerald-400 border-emerald-850/60' 
+                      ? 'bg-emerald-950/40 text-emerald-400 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.15)]' 
                       : 'bg-slate-900 hover:bg-slate-800 text-slate-400 border-slate-800'
                   }`}
-                  title="Gemini API Key 설정"
+                  title={customApiKey ? 'Gemini API Key 등록됨 (수정하려면 클릭)' : 'Gemini API Key 설정'}
                 >
-                  <i className="fa-solid fa-key"></i>
-                  <span className="text-[9.5px] font-bold">
-                    {customApiKey ? 'API 키 등록됨' : 'API 키'}
-                  </span>
+                  <i className="fa-solid fa-key text-sm"></i>
+                  {customApiKey && (
+                    <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                  )}
                 </button>
 
+                {/* PDF Link Button */}
                 <button 
                   onClick={() => setIsPdfModalOpen(true)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10.5px] font-bold border transition-colors ${
+                  className={`relative w-9 h-9 flex items-center justify-center rounded-xl border transition-all active:scale-95 shrink-0 ${
                     pdfText 
-                      ? 'bg-cyan-950/40 text-cyan-400 border-cyan-850' 
+                      ? 'bg-cyan-950/40 text-cyan-400 border-cyan-500/30 shadow-[0_0_10px_rgba(6,182,212,0.15)]' 
                       : 'bg-slate-900 hover:bg-slate-800 text-slate-400 border-slate-800'
                   }`}
+                  title={pdfText ? '교재 PDF 연동됨 (변경하려면 클릭)' : '교재 PDF 연동'}
                 >
-                  <i className="fa-solid fa-paperclip"></i>
-                  {pdfText ? 'PDF 연동됨' : '교재 PDF 연동'}
+                  <i className="fa-solid fa-paperclip text-sm"></i>
+                  {pdfText && (
+                    <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+                    </span>
+                  )}
                 </button>
               </div>
             </header>
