@@ -1,4 +1,4 @@
-const CACHE_NAME = 'semiconductor-academy-v3';
+const CACHE_NAME = 'semiconductor-academy-v4';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
