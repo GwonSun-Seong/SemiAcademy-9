@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Semiconductor AI Academy Companion</title>
+  <title>반도체 도와줘! ⚡ (9조)</title>
   <meta name="description" content="반도체 8대 공정 학습 가이드, AI 트러블슈팅 챗봇, AI 자동 생성 퀴즈를 제공하는 스마트 교육 서비스">
   
   <!-- Tailwind CSS CDN -->
@@ -2495,7 +2495,7 @@ JSON 배열 구조 예시:
                 </div>
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div>
-                    <label className="block text-[10px] text-slate-55-rgb font-bold mb-1">작성자 닉네임</label>
+                    <label className="block text-[10px] text-slate-400 font-bold mb-1">작성자 닉네임</label>
                     <input 
                       type="text" 
                       placeholder="닉네임"
@@ -2505,7 +2505,7 @@ JSON 배열 구조 예시:
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] text-slate-55-rgb font-bold mb-1">삭제용 비밀번호</label>
+                    <label className="block text-[10px] text-slate-400 font-bold mb-1">삭제용 비밀번호</label>
                     <input 
                       type="password" 
                       placeholder="비밀번호"
@@ -2517,7 +2517,7 @@ JSON 배열 구조 예시:
                 </div>
 
                 <div className="text-xs">
-                  <label className="block text-[10px] text-slate-55-rgb font-bold mb-1">글 제목</label>
+                  <label className="block text-[10px] text-slate-400 font-bold mb-1">글 제목</label>
                   <input 
                     type="text" 
                     placeholder="제목을 입력하세요"
@@ -2528,7 +2528,7 @@ JSON 배열 구조 예시:
                 </div>
 
                 <div className="text-xs">
-                  <label className="block text-[10px] text-slate-55-rgb font-bold mb-1">본문 내용</label>
+                  <label className="block text-[10px] text-slate-400 font-bold mb-1">본문 내용</label>
                   <textarea 
                     rows="5"
                     placeholder="내용을 작성하세요..."
@@ -2568,7 +2568,7 @@ JSON 배열 구조 예시:
 
                     return (
                       <div key={post.id} className="bg-slate-900/30 border border-slate-800/60 rounded-2xl p-4 space-y-3 relative group hover:border-slate-700 transition-colors">
-                        {/* Delete post button */}
+                        {/* Delete Post Button */}
                         <button
                           onClick={() => handleDeletePost(post.id, post.password)}
                           className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 text-slate-500 hover:text-rose-400 transition-opacity text-xs"
@@ -2577,202 +2577,197 @@ JSON 배열 구조 예시:
                           <i className="fa-solid fa-trash-can"></i>
                         </button>
 
-                        <h3 className="text-xs font-bold text-slate-200 pr-8">{post.title}</h3>
-                        <p className="text-[11px] text-slate-400 leading-relaxed white-space-pre-wrap">{post.content}</p>
+                        {/* Title & Metadata */}
+                        <div>
+                          <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">
+                            Q&A 토론
+                          </span>
+                          <h3 className="text-sm font-extrabold text-slate-200 mt-1.5 pr-8">{post.title}</h3>
+                        </div>
+
+                        {/* Content */}
+                        <p className="text-[11px] text-slate-300 leading-relaxed whitespace-pre-wrap select-text">{post.content}</p>
                         
-                        <div className="flex justify-between items-center pt-2 border-t border-slate-900/80">
-                          {/* Left: Author Info */}
-                          <div className="flex items-center gap-2 text-[9px] text-slate-500 font-semibold">
+                        {/* Footer & Actions */}
+                        <div className="flex items-center justify-between text-[9.5px] text-slate-500 pt-2.5 border-t border-slate-900">
+                          <div className="flex items-center gap-2 font-semibold">
                             <span className="text-slate-400"><i className="fa-solid fa-user-graduate mr-1"></i>{post.nickname}</span>
                             <span>•</span>
                             <span>{new Date(post.created_at).toLocaleString('ko-KR', { hour12: false })}</span>
                           </div>
-
-                          {/* Right: Likes & Comments Action Buttons */}
-                          <div className="flex items-center gap-3">
+                          
+                          <div className="flex items-center gap-3 shrink-0">
                             {/* Like Button */}
                             <button
                               onClick={() => handleLikePost(post.id, post.likes)}
-                              className={`flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all ${
+                              className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all ${
                                 isLiked 
-                                  ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' 
-                                  : 'bg-slate-950/40 border-slate-850 text-slate-400 hover:text-rose-400 hover:border-rose-500/20'
+                                  ? 'bg-rose-500/10 border-rose-500/30 text-rose-400 cursor-not-allowed' 
+                                  : 'bg-slate-950/40 border-slate-850 text-slate-400 hover:border-rose-500/30 hover:text-rose-400'
                               }`}
                             >
-                              <i className={`fa-solid fa-heart ${isLiked ? 'text-rose-400' : ''}`}></i>
-                              <span>{post.likes || 0}</span>
+                              <i className={`fa-solid fa-heart ${isLiked ? 'text-rose-500' : ''}`}></i>
+                              <span>공감 {post.likes || 0}</span>
                             </button>
 
-                            {/* Comment Accordion Trigger */}
+                            {/* Comment Accordion Button */}
                             <button
                               onClick={() => toggleComments(post.id)}
-                              className={`flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all ${
-                                isExpanded
-                                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                                  : 'bg-slate-950/40 border-slate-850 text-slate-400 hover:text-emerald-400 hover:border-emerald-500/20'
+                              className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all ${
+                                isExpanded 
+                                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
+                                  : 'bg-slate-950/40 border-slate-850 text-slate-400 hover:border-emerald-500/30 hover:text-emerald-400'
                               }`}
                             >
                               <i className="fa-solid fa-comments"></i>
-                              <span>{post.comments.length}</span>
+                              <span>댓글 {post.comments.length}</span>
                             </button>
                           </div>
                         </div>
 
-                        {/* Collapsible Comments list */}
+                        {/* Comments Accordion Panel */}
                         {isExpanded && (
-                          <div className="mt-3 pt-3 border-t border-slate-900/60 space-y-3.5 fade-in">
-                            {/* Comments Header */}
-                            <h4 className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
-                              <i className="fa-solid fa-comment-dots text-emerald-400"></i>
-                              댓글 ({post.comments.length})
-                            </h4>
+                          <div className="mt-4 pt-3.5 border-t border-slate-800/80 space-y-4 fade-in" onClick={e => e.stopPropagation()}>
+                            {/* Comments List */}
+                            <div className="space-y-3.5">
+                              {rootComments.length === 0 ? (
+                                <p className="text-[10px] text-slate-500 py-2 text-center">등록된 댓글이 없습니다. 첫 댓글을 남겨보세요!</p>
+                              ) : (
+                                rootComments.map(comment => {
+                                  const replies = post.comments.filter(c => c.parent_id === comment.id);
+                                  const rInputs = replyInputs[comment.id] || { nickname: localStorage.getItem('cached_nickname') || '', password: '', content: '' };
+                                  const isReplying = replyingTo === comment.id;
 
-                            {/* Comment Write Box */}
-                            <form onSubmit={(e) => handleAddComment(e, post.id)} className="bg-slate-950/50 p-3 border border-slate-850 rounded-xl space-y-2.5">
+                                  return (
+                                    <div key={comment.id} className="space-y-2.5">
+                                      {/* Parent Comment */}
+                                      <div className="bg-slate-950/40 border border-slate-850/60 p-3 rounded-xl relative group/comment">
+                                        <button
+                                          onClick={() => handleDeleteComment(comment.id, comment.password)}
+                                          className="absolute top-3 right-3 opacity-0 group-hover/comment:opacity-100 text-slate-500 hover:text-rose-400 transition-opacity text-[10px]"
+                                          title="댓글 삭제"
+                                        >
+                                          <i className="fa-solid fa-trash-can"></i>
+                                        </button>
+
+                                        <div className="flex items-center gap-1.5 text-[9.5px] font-bold text-slate-400 mb-1">
+                                          <span>{comment.nickname}</span>
+                                          <span className="text-[8.5px] text-slate-500 font-medium">({new Date(comment.created_at).toLocaleString('ko-KR', { hour12: false })})</span>
+                                        </div>
+                                        <p className="text-[10.5px] text-slate-300 leading-relaxed whitespace-pre-wrap select-text">{comment.content}</p>
+                                        
+                                        <div className="mt-1.5 flex justify-start">
+                                          <button
+                                            onClick={() => setReplyingTo(isReplying ? null : comment.id)}
+                                            className="text-[9px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors"
+                                          >
+                                            <i className="fa-solid fa-reply fa-rotate-180"></i>
+                                            답글 달기
+                                          </button>
+                                        </div>
+                                      </div>
+
+                                      {/* Replies (Nested Comments) */}
+                                      {replies.map(reply => (
+                                        <div key={reply.id} className="pl-6 flex gap-2.5 items-start">
+                                          <i className="fa-solid fa-reply fa-rotate-180 text-slate-600 mt-1.5 text-xs shrink-0"></i>
+                                          <div className="flex-1 bg-slate-950/60 border border-slate-850/40 p-3 rounded-xl relative group/reply">
+                                            <button
+                                              onClick={() => handleDeleteComment(reply.id, reply.password)}
+                                              className="absolute top-3 right-3 opacity-0 group-hover/reply:opacity-100 text-slate-500 hover:text-rose-400 transition-opacity text-[10px]"
+                                              title="답글 삭제"
+                                            >
+                                              <i className="fa-solid fa-trash-can"></i>
+                                            </button>
+
+                                            <div className="flex items-center gap-1.5 text-[9.5px] font-bold text-slate-400 mb-1">
+                                              <span>{reply.nickname}</span>
+                                              <span className="text-[8.5px] text-slate-500 font-medium">({new Date(reply.created_at).toLocaleString('ko-KR', { hour12: false })})</span>
+                                            </div>
+                                            <p className="text-[10.5px] text-slate-300 leading-relaxed whitespace-pre-wrap select-text">{reply.content}</p>
+                                          </div>
+                                        </div>
+                                      ))}
+
+                                      {/* Reply Input Form */}
+                                      {isReplying && (
+                                        <form onSubmit={(e) => handleAddReply(e, post.id, comment.id)} className="pl-6 flex gap-2.5 items-start fade-in">
+                                          <i className="fa-solid fa-reply fa-rotate-180 text-emerald-500 mt-3 text-xs shrink-0 animate-pulse"></i>
+                                          <div className="flex-1 bg-slate-950/50 border border-emerald-950/40 p-3 rounded-xl space-y-3">
+                                            <div className="grid grid-cols-2 gap-2 text-[9.5px]">
+                                              <input
+                                                type="text"
+                                                placeholder="답글 작성자"
+                                                value={rInputs.nickname}
+                                                onChange={e => handleReplyInputChange(comment.id, 'nickname', e.target.value)}
+                                                className="w-full bg-slate-950 border border-slate-850 rounded-lg px-2.5 py-1 text-slate-100 outline-none focus:border-emerald-500"
+                                              />
+                                              <input
+                                                type="password"
+                                                placeholder="삭제 비밀번호"
+                                                value={rInputs.password}
+                                                onChange={e => handleReplyInputChange(comment.id, 'password', e.target.value)}
+                                                className="w-full bg-slate-950 border border-slate-850 rounded-lg px-2.5 py-1 text-slate-100 outline-none focus:border-emerald-500"
+                                              />
+                                            </div>
+                                            <div className="flex gap-2">
+                                              <input
+                                                type="text"
+                                                placeholder="답글 내용을 입력하세요..."
+                                                value={rInputs.content}
+                                                onChange={e => handleReplyInputChange(comment.id, 'content', e.target.value)}
+                                                className="flex-1 bg-slate-950 border border-slate-850 rounded-lg px-2.5 py-1.5 text-[10px] text-slate-100 outline-none focus:border-emerald-500"
+                                              />
+                                              <button
+                                                type="submit"
+                                                className="px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-[9.5px] transition-colors"
+                                              >
+                                                등록
+                                              </button>
+                                            </div>
+                                          </div>
+                                        </form>
+                                      )}
+                                    </div>
+                                  );
+                                })
+                              )}
+                            </div>
+
+                            {/* Top-level Comment Write Form */}
+                            <form onSubmit={(e) => handleAddComment(e, post.id)} className="bg-slate-950/40 border border-slate-850/60 p-3 rounded-xl space-y-2.5 mt-2">
                               <div className="grid grid-cols-2 gap-2 text-[10px]">
                                 <input
                                   type="text"
                                   placeholder="댓글 작성자"
                                   value={cInputs.nickname}
                                   onChange={e => handleCommentInputChange(post.id, 'nickname', e.target.value)}
-                                  className="bg-slate-900 border border-slate-850 rounded-lg px-2.5 py-1 text-slate-200 outline-none focus:border-emerald-500"
+                                  className="w-full bg-slate-950 border border-slate-850 rounded-lg px-2.5 py-1 text-slate-100 outline-none focus:border-emerald-500"
                                 />
                                 <input
                                   type="password"
-                                  placeholder="비밀번호"
-                                  value={cInputs.password || ''}
+                                  placeholder="삭제용 비밀번호"
+                                  value={cInputs.password}
                                   onChange={e => handleCommentInputChange(post.id, 'password', e.target.value)}
-                                  className="bg-slate-900 border border-slate-850 rounded-lg px-2.5 py-1 text-slate-200 outline-none focus:border-emerald-500"
+                                  className="w-full bg-slate-950 border border-slate-850 rounded-lg px-2.5 py-1 text-slate-100 outline-none focus:border-emerald-500"
                                 />
                               </div>
                               <div className="flex gap-2">
                                 <input
                                   type="text"
-                                  placeholder="댓글 내용을 작성하세요..."
-                                  value={cInputs.content || ''}
+                                  placeholder="댓글 내용을 입력하세요..."
+                                  value={cInputs.content}
                                   onChange={e => handleCommentInputChange(post.id, 'content', e.target.value)}
-                                  className="flex-1 bg-slate-900 border border-slate-850 rounded-lg px-3 py-1.5 text-[10.5px] text-slate-200 outline-none focus:border-emerald-500"
+                                  className="flex-1 bg-slate-950 border border-slate-850 rounded-lg px-2.5 py-1.5 text-[10.5px] text-slate-100 outline-none focus:border-emerald-500"
                                 />
                                 <button
                                   type="submit"
-                                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg text-[10px] transition-colors"
+                                  className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded-lg text-[10px] transition-colors"
                                 >
                                   등록
                                 </button>
                               </div>
                             </form>
-
-                            {/* Render Comments List */}
-                            {rootComments.length === 0 ? (
-                              <p className="text-[10px] text-slate-500 italic pl-1">등록된 댓글이 없습니다. 첫 댓글을 남겨보세요!</p>
-                            ) : (
-                              <div className="space-y-3 pl-1">
-                                {rootComments.map(comment => {
-                                  // Fetch replies for this specific comment
-                                  const replies = post.comments.filter(c => c.parent_id === comment.id);
-                                  const rInputs = replyInputs[comment.id] || { nickname: localStorage.getItem('cached_nickname') || '', password: '', content: '' };
-
-                                  return (
-                                    <div key={comment.id} className="space-y-2">
-                                      {/* Parent Comment Card */}
-                                      <div className="bg-slate-950/40 p-2.5 border border-slate-900 rounded-xl space-y-1 relative group/comment">
-                                        {/* Delete Comment Button */}
-                                        <button
-                                          onClick={() => handleDeleteComment(comment.id, comment.password)}
-                                          className="absolute top-2.5 right-2.5 opacity-0 group-hover/comment:opacity-100 text-slate-500 hover:text-rose-400 transition-opacity text-[10px]"
-                                          title="댓글 삭제"
-                                        >
-                                          <i className="fa-solid fa-trash-can"></i>
-                                        </button>
-
-                                        <div className="flex justify-between items-center text-[9px] font-bold text-slate-400">
-                                          <span className="text-emerald-400">{comment.nickname}</span>
-                                          <span className="text-[8px] text-slate-600 pr-5">{new Date(comment.created_at).toLocaleString('ko-KR', { hour12: false })}</span>
-                                        </div>
-                                        <p className="text-[10.5px] text-slate-300 leading-normal">{comment.content}</p>
-
-                                        {/* Reply Trigger Button */}
-                                        <div className="pt-1 text-right">
-                                          <button
-                                            onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-                                            className="text-[8px] font-black text-slate-500 hover:text-emerald-400 transition-colors uppercase tracking-wider"
-                                          >
-                                            <i className="fa-solid fa-reply mr-1"></i>답글 달기
-                                          </button>
-                                        </div>
-                                      </div>
-
-                                      {/* Sub-reply Input Form (Inline) */}
-                                      {replyingTo === comment.id && (
-                                        <form onSubmit={(e) => handleAddReply(e, post.id, comment.id)} className="ml-6 bg-slate-950/70 p-2.5 border border-violet-500/20 rounded-xl space-y-2 fade-in">
-                                          <div className="text-[8.5px] font-bold text-violet-400 flex items-center gap-1">
-                                            <i className="fa-solid fa-turn-up fa-rotate-90"></i>
-                                            {comment.nickname} 님께 답글 작성
-                                          </div>
-                                          <div className="grid grid-cols-2 gap-2 text-[9px]">
-                                            <input
-                                              type="text"
-                                              placeholder="작성자"
-                                              value={rInputs.nickname}
-                                              onChange={e => handleReplyInputChange(comment.id, 'nickname', e.target.value)}
-                                              className="bg-slate-900 border border-slate-850 rounded-lg px-2 py-0.5 text-slate-200 outline-none focus:border-violet-500"
-                                            />
-                                            <input
-                                              type="password"
-                                              placeholder="비밀번호"
-                                              value={rInputs.password || ''}
-                                              onChange={e => handleReplyInputChange(comment.id, 'password', e.target.value)}
-                                              className="bg-slate-900 border border-slate-850 rounded-lg px-2 py-0.5 text-slate-200 outline-none focus:border-violet-500"
-                                            />
-                                          </div>
-                                          <div className="flex gap-2">
-                                            <input
-                                              type="text"
-                                              placeholder="답글 내용을 입력하세요..."
-                                              value={rInputs.content || ''}
-                                              onChange={e => handleReplyInputChange(comment.id, 'content', e.target.value)}
-                                              className="flex-1 bg-slate-900 border border-slate-850 rounded-lg px-2.5 py-1 text-[9.5px] text-slate-200 outline-none focus:border-violet-500"
-                                            />
-                                            <button
-                                              type="submit"
-                                              className="bg-violet-600 hover:bg-violet-500 text-white font-bold px-2.5 py-1 rounded-lg text-[9px] transition-colors"
-                                            >
-                                              등록
-                                            </button>
-                                          </div>
-                                        </form>
-                                      )}
-
-                                      {/* Nested Replies Rendering */}
-                                      {replies.map(reply => (
-                                        <div key={reply.id} className="ml-6 bg-slate-950/20 p-2.5 border-l-2 border-slate-800 rounded-r-xl space-y-1 relative group/reply flex gap-2">
-                                          {/* Arrow icon */}
-                                          <div className="text-slate-600 pt-0.5 text-[9px]">
-                                            <i className="fa-solid fa-turn-up fa-rotate-90"></i>
-                                          </div>
-                                          <div className="flex-1 space-y-1">
-                                            {/* Delete Reply Button */}
-                                            <button
-                                              onClick={() => handleDeleteComment(reply.id, reply.password)}
-                                              className="absolute top-2.5 right-2.5 opacity-0 group-hover/reply:opacity-100 text-slate-500 hover:text-rose-400 transition-opacity text-[10px]"
-                                              title="답글 삭제"
-                                            >
-                                              <i className="fa-solid fa-trash-can"></i>
-                                            </button>
-
-                                            <div className="flex justify-between items-center text-[9px] font-bold text-slate-400">
-                                              <span className="text-violet-400">{reply.nickname}</span>
-                                              <span className="text-[8px] text-slate-600 pr-5">{new Date(reply.created_at).toLocaleString('ko-KR', { hour12: false })}</span>
-                                            </div>
-                                            <p className="text-[10.5px] text-slate-300 leading-normal">{reply.content}</p>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
                           </div>
                         )}
                       </div>
@@ -2785,81 +2780,160 @@ JSON 배열 구조 예시:
         </div>
       );
     };
-
-    // --- 10. SEMICONDUCTOR HISTORY TIMELINE TAB ---
+        // --- 10. SEMICONDUCTOR HISTORY TIMELINE TAB ---
     const HistoryTab = ({ onHoverWord, onLeaveWord }) => {
+      const getIconBoxStyle = (colorClass) => {
+        const colorName = (colorClass || '').replace('text-', '').replace('-400', '').trim();
+        switch (colorName) {
+          case 'cyan': return 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.25)]';
+          case 'teal': return 'bg-teal-500/10 border-teal-500/30 text-teal-400 shadow-[0_0_12px_rgba(20,184,166,0.25)]';
+          case 'emerald': return 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.25)]';
+          case 'green': return 'bg-green-500/10 border-green-500/30 text-green-400 shadow-[0_0_12px_rgba(34,197,94,0.25)]';
+          case 'yellow': return 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400 shadow-[0_0_12px_rgba(234,179,8,0.25)]';
+          case 'amber': return 'bg-amber-500/10 border-amber-500/30 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.25)]';
+          case 'orange': return 'bg-orange-500/10 border-orange-500/30 text-orange-400 shadow-[0_0_12px_rgba(249,115,22,0.25)]';
+          case 'red': return 'bg-red-500/10 border-red-500/30 text-red-400 shadow-[0_0_12px_rgba(239,68,68,0.25)]';
+          case 'rose': return 'bg-rose-500/10 border-rose-500/30 text-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.25)]';
+          case 'pink': return 'bg-pink-500/10 border-pink-500/30 text-pink-400 shadow-[0_0_12px_rgba(236,72,153,0.25)]';
+          case 'fuchsia': return 'bg-fuchsia-500/10 border-fuchsia-500/30 text-fuchsia-400 shadow-[0_0_12px_rgba(217,70,239,0.25)]';
+          case 'purple': return 'bg-purple-500/10 border-purple-500/30 text-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.25)]';
+          case 'violet': return 'bg-violet-500/10 border-violet-500/30 text-violet-400 shadow-[0_0_12px_rgba(139,92,246,0.25)]';
+          case 'indigo': return 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.25)]';
+          case 'blue': return 'bg-blue-500/10 border-blue-500/30 text-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.25)]';
+          case 'sky': return 'bg-sky-500/10 border-sky-500/30 text-sky-400 shadow-[0_0_12px_rgba(14,165,233,0.25)]';
+          default: return 'bg-slate-950/60 border-slate-800/80 text-slate-400';
+        }
+      };
+
       const historyData = [
         {
           year: "1947",
           title: "트랜지스터 발명 (벨 연구소)",
-          desc: "존 바딘, 월터 브래튼, 윌리엄 쇼클리가 점접촉형 트랜지스터를 최초로 발명하며 진공관을 대체하고 현대 반도체 공학의 신호탄을 쏘아 올렸습니다.",
+          desc: "존 바딘, 월터 브래튼, 윌리엄 쇼클리가 점접촉형 게르마늄 트랜지스터를 최초로 발명하며 부피가 크고 부서지기 쉬운 진공관을 대체하고 현대 반도체 공학의 신호탄을 쏘아 올렸습니다.",
           icon: "fa-toggle-on",
-          color: "border-cyan-500 text-cyan-400 shadow-cyan-500/20"
+          color: "text-cyan-400"
+        },
+        {
+          year: "1954",
+          title: "최초의 실리콘 트랜지스터 상용화 (TI)",
+          desc: "텍사스 인스트루먼트(TI)사가 기존 게르마늄 트랜지스터의 고온 열변형 한계를 극복하고, 화학적으로 훨씬 안정적이며 온도 저항성이 높은 고순도 실리콘 트랜지스터 상용화에 성공했습니다.",
+          icon: "fa-cube",
+          color: "text-teal-400"
         },
         {
           year: "1958",
-          title: "집적회로(IC) 개발",
-          desc: "텍사스 인스트루먼트의 잭 킬비가 하나의 실리콘 기판 위에 트랜지스터, 저항, 캐패시터를 모두 올린 집적회로(IC)를 최초로 시연하며 마이크로칩 시대를 열었습니다.",
+          title: "집적회로(IC) 최초 개발 (TI)",
+          desc: "텍사스 인스트루먼트의 잭 킬비가 단일 실리콘 조각(기판) 위에 트랜지스터, 저항, 커패시터를 모두 연결한 미세 회로 적층 개념의 집적회로(IC)를 최초 시연하여 마이크로칩 시대를 개막했습니다.",
           icon: "fa-microchip",
-          color: "border-teal-500 text-teal-400 shadow-teal-500/20"
+          color: "text-emerald-400"
+        },
+        {
+          year: "1959",
+          title: "플래너 공정(Planar Process) 발명",
+          desc: "페어차일드 반도체의 장 회니가 이산화규소(SiO₂) 보호막을 표면에 씌우고 사진 식각(Photolithography)과 불순물 확산을 활용해 평면형 집적회로를 만드는 제조 공정을 발명, 현대 반도체 8대 공정의 원형을 정립했습니다.",
+          icon: "fa-border-all",
+          color: "text-green-400"
         },
         {
           year: "1960",
-          title: "MOS-FET 최초 개발",
-          desc: "벨 연구소의 강대원 박사와 마틴 아탈라가 금속-산화물-반도체 전계효과 트랜지스터(MOSFET)를 최초로 개발하였습니다. 이는 현대 고집적 LSI 및 디지털 프로세서의 가장 핵심 소자가 되었습니다.",
+          title: "MOS-FET 최초 개발 (벨 연구소)",
+          desc: "벨 연구소의 한국인 과학자 강대원 박사와 마틴 아탈라가 전계효과를 활용한 금속-산화물-반도체 트랜지스터(MOSFET)를 최초로 개발하였습니다. 이 소자는 현대 고밀도 디지털 프로세서 및 메모리 반도체의 핵심 근간이 되었습니다.",
           icon: "fa-bolt",
-          color: "border-emerald-500 text-emerald-400 shadow-emerald-500/20"
+          color: "text-yellow-400"
         },
         {
           year: "1965",
-          title: "무어의 법칙 (Moore's Law)",
-          desc: "페어차일드 반도체의 고든 무어가 마이크로칩에 집적되는 트랜지스터 수가 매 18~24개월마다 배로 증가한다는 무어의 법칙을 발표하여 업계 기술 지표를 정립했습니다.",
+          title: "무어의 법칙 (Moore's Law) 발표",
+          desc: "페어차일드의 고든 무어가 단일 실리콘 마이크로칩에 집적할 수 있는 트랜지스터의 수가 매 18~24개월마다 대략 두 배씩 증가한다는 무어의 법칙을 발표하여 반도체 업계의 로드맵과 기술 개발 이정표를 정립했습니다.",
           icon: "fa-chart-line",
-          color: "border-blue-500 text-blue-400 shadow-blue-500/20"
+          color: "text-amber-400"
         },
         {
           year: "1971",
-          title: "인텔 4004 마이크로프로세서",
-          desc: "인텔이 단일 칩에 CPU 기능을 집적한 세계 최초의 상용 마이크로프로세서인 4004를 출시하며 개인용 컴퓨터(PC) 및 정보통신 대중화의 근간을 마련했습니다.",
+          title: "인텔 4004 마이크로프로세서 출시",
+          desc: "인텔이 단일 실리콘 칩 안에 중앙 처리 장치(CPU)의 핵심 연산 및 제어 회로를 집적하는 데 성공한 세계 최초의 상용 4비트 마이크로프로세서 4004를 출시하며 개인 컴퓨터 시대를 앞당겼습니다.",
           icon: "fa-computer",
-          color: "border-indigo-500 text-indigo-400 shadow-indigo-500/20"
+          color: "text-orange-400"
+        },
+        {
+          year: "1978",
+          title: "인텔 8086 프로세서 및 x86 아키텍처의 탄생",
+          desc: "인텔이 16비트 프로세서인 8086을 출시하며 범용 컴퓨팅의 대명사인 x86 명령어 집합 아키텍처(ISA) 시대를 열었고, 이는 IBM PC의 표준 CPU로 선정되어 현대 퍼스널 컴퓨팅의 표준 기틀이 되었습니다.",
+          icon: "fa-hard-drive",
+          color: "text-red-400"
         },
         {
           year: "1983",
-          title: "대한민국 최초 64K D램 개발",
-          desc: "삼성전자가 세계에서 3번째로 64K D램 메모리를 독자 개발하는 데 성공하며, 후발 주자였던 대한민국이 글로벌 반도체 초강국으로 도약하는 역사적 첫 발을 떼었습니다.",
+          title: "대한민국 최초 64K D램 독자 개발",
+          desc: "삼성전자가 기흥 팹에서 미국, 일본에 이어 세계에서 세 번째로 64K D램 메모리를 독자 개발하는 데 성공하며 후발 주자였던 대한민국이 글로벌 메모리 시장 초강국으로 도약하는 첫 위대한 발걸음을 뗐습니다.",
           icon: "fa-flag",
-          color: "border-violet-500 text-violet-400 shadow-violet-500/20"
+          color: "text-rose-400"
+        },
+        {
+          year: "1987",
+          title: "글로벌 최초 순수 파운드리 TSMC 설립",
+          desc: "모리스 창이 대만 정부의 지원 속에 설계 부서 없이 위탁 가공 및 제조 생산(Foundry)만을 전문으로 전담하는 비즈니스 모델을 창제하고 TSMC를 설립해, 팹리스와 파운드리의 완벽한 반도체 분업 생태계를 열었습니다.",
+          icon: "fa-industry",
+          color: "text-pink-400"
+        },
+        {
+          year: "1992",
+          title: "삼성전자 세계 최초 64M D램 개발 및 1위 등극",
+          desc: "삼성전자가 글로벌 선두 기업인 도시바, NEC 등을 추월하고 세계 최초로 64M D램 제품을 상용 개발하여 세계 메모리 시장 왕좌에 올랐으며, 이후 30년 이상 이어지는 대한민국 메모리 초격차 리더십의 위상을 다졌습니다.",
+          icon: "fa-trophy",
+          color: "text-fuchsia-400"
         },
         {
           year: "1999",
-          title: "FinFET (3D 트랜지스터) 제안",
-          desc: "UC 버클리의 첸밍 후 교수 연구팀이 평면 트랜지스터의 미세화 한계(단채널 효과)를 물리적으로 극복하기 위해 물고기 지느러미 형태의 3차원 입체 채널을 가진 FinFET 구조를 학계에 최초 제안했습니다.",
+          title: "3차원 입체 FinFET 트랜지스터 구조 제안",
+          desc: "UC 버클리의 첸밍 후 교수 연구팀이 2차원 평면(Planar) 트랜지스터의 미세화에 따른 누설 전류 한계(단채널 효과)를 제어하기 위해 물고기 지느러미 형태의 3차원 입체 채널을 가진 FinFET을 학계에 최초 제안했습니다.",
           icon: "fa-cubes",
-          color: "border-purple-500 text-purple-400 shadow-purple-500/20"
+          color: "text-purple-400"
+        },
+        {
+          year: "2005",
+          title: "High-k Metal Gate (HKMG) 공정 기술 도입",
+          desc: "소자 미세화가 가속되며 원자 단위 수준으로 얇아진 게이트 산화막(SiO₂)의 미세 누설 전류를 제어하기 위해, 기존의 폴리실리콘 대신 금속 게이트와 유전율이 극도로 높은 High-k 신소재막을 도입하는 구조적 전환이 일어났습니다.",
+          icon: "fa-circle-nodes",
+          color: "text-violet-400"
         },
         {
           year: "2011",
-          title: "FinFET 최초 양산 적용 (22nm)",
-          desc: "인텔이 Ivy Bridge CPU 라인업에 22nm 공정 기반 Tri-Gate(FinFET) 기술을 최초로 상용 양산 도입하며, 나노 공정에서의 누설 전류 차단 한계를 넘겼습니다.",
-          icon: "fa-industry",
-          color: "border-fuchsia-500 text-fuchsia-400 shadow-fuchsia-500/20"
+          title: "FinFET 최초 양산 적용 (22nm 공정)",
+          desc: "인텔이 Ivy Bridge CPU 라인업에 22나노 공정 기반의 3D Tri-Gate(FinFET) 기술을 최초로 공식 양산 적용함으로써, 게이트 채널 지배력을 극대화하여 나노 공정에서의 물리적 누설 전류 장벽을 넘어섰습니다.",
+          icon: "fa-gears",
+          color: "text-indigo-400"
         },
         {
           year: "2019",
-          title: "EUV (극자외선) 양산 도입",
-          desc: "기존 ArF 액침 노광의 물리적 패터닝 한계를 뛰어넘어 13.5nm 파장의 극자외선(EUV) 노광 공정이 7나노급 초미세 반도체 생산 라인에 공식 적용되어 ASML 스캐너 양산 시대를 열었습니다.",
+          title: "EUV (극자외선, 13.5nm) 노광기 공식 양산 도입",
+          desc: "기존 ArF 액침 노광의 멀티 패터닝 물리적 한계를 완전히 돌파하기 위해 파장이 극도로 짧은 13.5nm 극자외선(EUV) 노광 장비를 ASML이 세계 최초로 파운드리 7나노 이하 최첨단 반도체 라인에 정식 양산 적용했습니다.",
           icon: "fa-wand-magic-sparkles",
-          color: "border-pink-500 text-pink-400 shadow-pink-500/20"
+          color: "text-blue-400"
+        },
+        {
+          year: "2020",
+          title: "세계 최초 D램 제조에 EUV 노광 공정 도입",
+          desc: "메모리 1위 리더 기업들이 모바일 D램 생산 라인에 극자외선(EUV) 노광 장비를 세계 최초로 부분 도입해 양산 성공함으로써, 파운드리를 넘어 초미세 메모리 반도체 공정에서도 선폭 축소 한계를 성공적으로 돌파했습니다.",
+          icon: "fa-circle-dot",
+          color: "text-sky-400"
         },
         {
           year: "2022",
-          title: "3nm GAA (Gate-All-Around)",
-          desc: "채널의 4면을 게이트가 감싸 전류 누설을 원천 차단하는 나노시트(MBCFET) 기반 GAA(Gate-All-Around) 3나노 공정이 세계 최초로 양산에 성공하여 반도체 구조적 혁신을 이룩했습니다.",
+          title: "3나노 GAA (Gate-All-Around) 세계 최초 양산",
+          desc: "채널의 3면만 감싸는 FinFET을 개량해 채널의 4면 전체를 게이트가 둘러싸 물리적 한계점 부근의 전류 흐름을 원천 제어하는 나노시트(MBCFET) 기반 GAA 3나노 공정이 세계 최초로 상용 양산에 성공했습니다.",
           icon: "fa-atom",
-          color: "border-amber-500 text-amber-400 shadow-amber-500/20"
+          color: "text-cyan-400"
+        },
+        {
+          year: "2024~2025",
+          title: "HBM3E / HBM4 및 2nm 백사이드 파워 양산 진입",
+          desc: "AI 고속 학습 및 연산용 칩 성능 극대화를 위한 초고대역폭 메모리(HBM3E 및 HBM4)가 적층 TSV 공정을 타고 폭발 성장했으며, 극미세 소자 전력 신뢰성을 높이기 위해 웨이퍼 뒷면에 전력선을 설계하는 BSPDN 기술이 2나노 공정에 공식 적용되기 시작했습니다.",
+          icon: "fa-database",
+          color: "text-emerald-400"
         }
       ];
+
 
       return (
         <div className="flex flex-col h-full fade-in">
@@ -2869,33 +2943,29 @@ JSON 배열 구조 예시:
               <span className="w-2.5 h-4 bg-amber-500 rounded-full"></span>
               반도체 혁신 역사 연표
             </h2>
-            <p className="text-[11px] text-slate-400">트랜지스터의 탄생부터 최첨단 GAA 공정까지의 마일스톤</p>
+            <p className="text-[11px] text-slate-400">트랜지스터의 탄생부터 최첨단 HBM 및 GAA 공정까지의 마일스톤</p>
           </div>
 
           {/* Timeline Scroll Box */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 pb-4 relative">
-            {/* The vertical neon line */}
-            <div className="absolute left-6 top-3 bottom-6 w-0.5 bg-gradient-to-b from-cyan-500 via-violet-500 to-amber-500 shadow-[0_0_10px_rgba(139,92,246,0.3)]"></div>
-
-            <div className="space-y-6 relative">
+          <div className="flex-1 overflow-y-auto custom-scrollbar px-4 pb-6 relative">
+            <div className="space-y-5">
               {historyData.map((item, index) => (
-                <div key={index} className="flex gap-4 items-start group">
-                  {/* Timeline dot / icon */}
-                  <div className={`w-12 h-12 rounded-full border bg-slate-950 flex items-center justify-center shrink-0 z-10 transition-all duration-300 group-hover:scale-110 shadow-[0_0_15px_transparent] group-hover:shadow-current ${item.color}`}>
-                    <i className={`fa-solid ${item.icon} text-base`}></i>
-                  </div>
-
-                  {/* Milestone Card */}
-                  <div className="flex-1 bg-slate-900/40 hover:bg-slate-900/70 border border-slate-800/80 hover:border-slate-700/60 p-4 rounded-2xl transition-all duration-300">
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">{item.year}년</span>
-                      <span className="w-2 h-2 rounded-full bg-slate-800 group-hover:bg-amber-400 transition-colors"></span>
+                <div key={index} className="bg-slate-900/40 hover:bg-slate-900/70 border border-slate-800/80 hover:border-slate-700/60 p-6 rounded-3xl transition-all duration-300 flex flex-col gap-4 shadow-sm hover:shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
+                  <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-900/80">
+                    <div className="flex items-center gap-3.5">
+                      {/* 8대공정 스타일의 rounded-xl 글래스모피즘 아이콘 박스 */}
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center border backdrop-blur-md transition-all duration-300 ${getIconBoxStyle(item.color)}`}>
+                        <i className={`fa-solid ${item.icon} text-sm`}></i>
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-extrabold text-slate-200 tracking-tight">{item.title}</h3>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-amber-500 mt-0.5 block">{item.year}년</span>
+                      </div>
                     </div>
-                    <h3 className="text-xs font-bold text-slate-200 mb-2">{item.title}</h3>
-                    <p className="text-[10.5px] leading-relaxed text-slate-400 select-text">
-                      <InteractiveText text={item.desc} onHoverWord={onHoverWord} onLeaveWord={onLeaveWord} />
-                    </p>
                   </div>
+                  <p className="text-[10.5px] leading-relaxed text-slate-400 select-text px-1">
+                    <InteractiveText text={item.desc} onHoverWord={onHoverWord} onLeaveWord={onLeaveWord} />
+                  </p>
                 </div>
               ))}
             </div>
@@ -3623,14 +3693,11 @@ JSON 구조 예시:
           <aside className="hidden md:flex flex-col w-64 border-r border-slate-900 bg-slate-950/95 backdrop-blur-lg p-5 justify-between z-40 shrink-0 select-none">
             <div className="space-y-6">
               {/* Logo / Header */}
-              <div className="flex flex-col gap-1.5 pb-4 border-b border-slate-900">
-                <h1 className="text-base font-black text-slate-100 flex items-center gap-1.5">
+              <div className="pb-4 border-b border-slate-900">
+                <h1 className="text-base font-black text-slate-100 flex items-center gap-1.5 tracking-tight select-none">
                   <i className="fa-solid fa-microchip text-cyan-400"></i>
-                  Semiconductor
+                  <span>반도체 도와줘! <span className="text-cyan-400 ml-1 font-extrabold text-[13px]">(9조)</span></span>
                 </h1>
-                <span className="text-cyan-400 text-xs font-semibold px-2.5 py-0.5 rounded bg-cyan-950 border border-cyan-800/40 w-fit">
-                  AI Academy
-                </span>
               </div>
 
               {/* Navigation Tabs */}
@@ -3718,10 +3785,10 @@ JSON 구조 예시:
           {/* Right Content Area */}
           <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden">
             {/* Header (Mobile Only) */}
-            <header className="shrink-0 bg-slate-950/80 backdrop-blur-md border-b border-slate-900 py-3 px-4 flex items-center justify-between z-10 md:hidden">
-              <h1 className="text-base font-black text-slate-100 flex items-center gap-1.5 select-none">
+            <header className="shrink-0 bg-slate-950/80 backdrop-blur-md border-b border-slate-900 py-3 px-4 flex items-center justify-between z-10 md:hidden select-none">
+              <h1 className="text-sm font-black text-slate-100 flex items-center gap-1.5">
                 <i className="fa-solid fa-microchip text-cyan-400"></i>
-                Semiconductor <span className="text-cyan-400 text-xs font-semibold px-2 py-0.5 rounded bg-cyan-950 border border-cyan-800/40">AI Academy</span>
+                <span>반도체 도와줘! <span className="text-cyan-400 ml-1 font-extrabold text-xs">(9조)</span></span>
               </h1>
               
               <div className="flex items-center gap-3">
